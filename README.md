@@ -1,6 +1,6 @@
-<p align="center"><img src="https://raw.githubusercontent.com/NatalJR/guild/main/.claude-plugin/icon.png" width="128" alt="guild icon"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/NatalJR/daguild/main/.claude-plugin/icon.png" width="128" alt="daguild icon"></p>
 
-# guild
+# daguild
 
 A project-agnostic Claude Code plugin that routes coding work through a crew of specialist agents.
 
@@ -9,6 +9,7 @@ A project-agnostic Claude Code plugin that routes coding work through a crew of 
 - [What it is](#what-it-is)
 - [The DAG](#the-dag)
 - [Install](#install)
+- [Migrating from guild](#migrating-from-guild)
 - [Editions](#editions)
 - [Adopting in a project](#adopting-in-a-project)
 - [Requirements](#requirements)
@@ -25,51 +26,51 @@ A project-agnostic Claude Code plugin that routes coding work through a crew of 
 
 This section summarizes what the plugin ships and how its agents are tiered. It is a project-agnostic delegation crew for Claude Code. It ships:
 
-- **Six agents:** `guild:investigator`, `guild:builder`, `guild:architect`, `guild:reviewer`, `guild:security`, `guild:scribe`.
+- **Six agents:** `daguild:investigator`, `daguild:builder`, `daguild:architect`, `daguild:reviewer`, `daguild:security`, `daguild:scribe`.
 - **Default procedure:** `context/procedure.md`, injected at session start, so every coding request walks the delegation DAG without a slash command: classify, investigate, scope gate, design gate, implement, review, report.
-- **DAG rules:** `skills/guild/DAG.md` carries the node rules, dispatch modes, cleanup-pass and docs-sync procedures and the parallel-wave contracts.
-- **Forced walk:** `/guild <task>` only forces the walk on a request that looks trivial.
+- **DAG rules:** `skills/daguild/DAG.md` carries the node rules, dispatch modes, cleanup-pass and docs-sync procedures and the parallel-wave contracts.
+- **Forced walk:** `/daguild <task>` only forces the walk on a request that looks trivial.
 - **Hooks:** POSIX sh, each with a PowerShell twin for Windows machines without Git Bash. They cover always-on context injection at session start, per-prompt reinforcement, an emoji scan on every file edit, and a subagent receipt-contract check.
 - **Opt-in git handling:** a generic `git` skill plus a guard hook that denies AI attribution, `--no-verify` and forced pushes (see Git handling).
 - **Switches:** every hook and the optional procedure steps can be turned off per user or per project (see Configuration).
 - **Two workflows:** for the review and cleanup-pass waves.
 - **Charter convention:** a per-project charter.
 
-Project knowledge never lives in the plugin. It lives in `<project>/.claude/guild.md` (the charter), which every agent reads first.
+Project knowledge never lives in the plugin. It lives in `<project>/.claude/daguild.md` (the charter), which every agent reads first.
 
 Models are pinned per agent (the shipped defaults; see Model and effort per agent to change them):
 
 | Agent | Model |
 |---|---|
-| `guild:investigator` | haiku |
-| `guild:builder` | opus |
-| `guild:architect` | opus |
-| `guild:reviewer` | opus |
-| `guild:security` | fable (never downgraded) |
-| `guild:scribe` | sonnet |
+| `daguild:investigator` | haiku |
+| `daguild:builder` | opus |
+| `daguild:architect` | opus |
+| `daguild:reviewer` | opus |
+| `daguild:security` | fable (never downgraded) |
+| `daguild:scribe` | sonnet |
 
 The rationale is cost tiering (cheap scouting, mid-cost implementation, the strongest model only for security and orchestration) and wall-clock parallelism, not context saving.
 
 ## The DAG
 
-This section shows the graph every coding request walks; the full flowchart with every edge and terminal token is in `skills/guild/DAG.md`.
+This section shows the graph every coding request walks; the full flowchart with every edge and terminal token is in `skills/daguild/DAG.md`.
 
 ```mermaid
 flowchart TD
     T[Task] --> CLS{Classify}
     CLS -->|answer already in context| INLINE[Answer inline<br/>no subagent]
-    CLS -->|"where is / what calls<br/>edit, site unknown"| INV["guild:investigator (haiku)"]
+    CLS -->|"where is / what calls<br/>edit, site unknown"| INV["daguild:investigator (haiku)"]
     CLS -->|"edit, exact path:line known"| SCOPE{Scope gate}
-    CLS -->|"review this diff (non-security)"| REV["guild:reviewer<br/>norms"]
+    CLS -->|"review this diff (non-security)"| REV["daguild:reviewer<br/>norms"]
     CLS -->|find bugs in this diff| CR["code-review<br/>correctness"]
-    CLS -->|security review| SEC["guild:security<br/>security"]
+    CLS -->|security review| SEC["daguild:security<br/>security"]
     CLS -->|cleanup pass / end of phase| CLEAN[Cleanup pass<br/>+ docs sync at phase close]
     CLEAN -.->|slices through the procedure| SCOPE
     INV --> MAP["Site map<br/>path:line"]
     MAP --> SCOPE
-    SCOPE -->|"surgical, <=2 files,<br/>no new abstraction"| BLD["guild:builder<br/>1-2 files"]
+    SCOPE -->|"surgical, <=2 files,<br/>no new abstraction"| BLD["daguild:builder<br/>1-2 files"]
     SCOPE -->|"3+ files / new feature /<br/>cross-cutting"| DESIGN{Design gate}
-    DESIGN -->|"obvious: spec<br/>wide space: Plan options, spec"| ARC["guild:architect<br/>3+ files"]
+    DESIGN -->|"obvious: spec<br/>wide space: Plan options, spec"| ARC["daguild:architect<br/>3+ files"]
     BLD --> TOKEN{First-line token}
     ARC --> TOKEN
     TOKEN -->|"too-big."| ARC
@@ -93,7 +94,31 @@ flowchart TD
 
 This section covers getting the plugin onto a machine and enabling it.
 
-Local path, for development:
+Install exactly one edition. Both register the same `daguild:*` agents and skills; uninstall the other one from `/plugin` before switching.
+
+Full edition, from GitHub (hooks included):
+
+```bash
+claude plugin marketplace add NatalJR/daguild
+```
+
+Then, inside Claude Code:
+
+```
+/plugin install daguild@daguild
+```
+
+Enable in `~/.claude/settings.json`:
+
+```json
+{
+  "enabledPlugins": { "daguild@daguild": true }
+}
+```
+
+Claude Directory edition: install it from the Claude Directory inside Claude Code with `/plugin`. It has no hooks; the differences are listed under Editions.
+
+Local checkout, for development:
 
 ```bash
 claude plugin marketplace add <path to your checkout>
@@ -102,48 +127,55 @@ claude plugin marketplace add <path to your checkout>
 Then, inside Claude Code:
 
 ```
-/plugin install guild@guild
+/plugin install daguild@daguild
 ```
 
-From GitHub, once pushed:
+Update with `/plugin update daguild`.
 
-```bash
-claude plugin marketplace add NatalJR/guild
-```
+## Migrating from guild
 
-Enable in `~/.claude/settings.json`:
+This section covers moving an existing install and project from the plugin's former name, guild; the rename landed in 0.4.0.
 
-```json
-{
-  "enabledPlugins": { "guild@guild": true }
-}
-```
+Existing install, in `/plugin`:
 
-Update with `/plugin update guild`.
+1. Uninstall `guild@guild` and remove the `guild` marketplace.
+2. Add the new marketplace: `NatalJR/daguild` for a GitHub install; for a local-checkout install, re-add your checkout path with `claude plugin marketplace add <path>`, since the marketplace name comes from the checkout's `marketplace.json`.
+3. Install `daguild@daguild`.
+4. Settings and options: if you wrote the entry by hand, replace `guild@guild` with `daguild@daguild` under `enabledPlugins` in `~/.claude/settings.json`. Plugin options belong to the plugin id, so git handling and the per-agent model and effort options return to their defaults; set them again in `/config` or at the install prompt.
+
+Per project:
+
+- **Charter:** rename `.claude/guild.md` to `.claude/daguild.md`.
+- **Switch files:** rename `guild.conf` to `daguild.conf` in `~/.claude/` and in the project's `.claude/` where present.
+- **References:** `guild:*` agents become `daguild:*`, and `/guild` becomes `/daguild`.
+
+The old file names are no longer read.
 
 ## Editions
 
 This section states the two editions of the plugin and how they differ.
 
-- **Full edition:** the `main` branch, hooks included; installed from the GitHub marketplace as described in Install. `tools/build-release.sh` produces the slim, self-contained build of this edition (hooks compiled in), published on the `release` branch; the Claude Directory tracks the directory edition on `claude-directory` instead.
-- **Claude Directory edition:** generated from `main` by `sh tools/build-directory.sh OUTDIR` (OUTDIR an empty directory) and published on the branch `claude-directory`, which the Claude Directory tracks. It exists because the directory accepts hooks of type command only from Verified organizations (finding `LOCAL_CODE_HOOK_COMMAND`).
-- **Edition sources:** the files that differ live in `editions/directory/`.
+The full edition has hooks; the Claude Directory edition has none:
 
-The directory edition has no hooks:
-
-- **Context:** an output style `guild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
-- **Skill overlay:** `editions/directory/skills/guild/SKILL.md` replaces the guild skill and gives the resolved plugin paths.
+- **Lost against the full edition:** the per-prompt reminder, the `daguild.conf` switches, the git guard, the emoji scan, the receipt check, the per-agent model and effort options, and the two workflows (the directory validator holds workflow JavaScript for manual review as scripts it cannot follow).
+- **Context:** an output style `daguild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
+- **Skill overlay:** `editions/directory/skills/daguild/SKILL.md` replaces the daguild skill and gives the resolved plugin paths.
 - **Manifest and README:** `plugin.json` drops the per-agent model and effort options; `editions/directory/README.md` becomes its `README.md`.
-- **Lost against the full edition:** the per-prompt reminder, the `guild.conf` switches, the git guard, the emoji scan, the receipt check, the per-agent model and effort options, and the two workflows (the directory validator holds workflow JavaScript for manual review as scripts it cannot follow).
+
+Maintainer notes:
+
+- **Branch roles:** `main` is the full edition and what manual installs use. `claude-directory` holds the generated directory edition and is what the Claude Directory tracks. The `release` branch holds the slim full-edition build from `tools/build-release.sh` and nothing tracks it at present.
+- **Directory build:** generated from `main` by `sh tools/build-directory.sh OUTDIR` (OUTDIR an empty directory). It exists because the directory accepts hooks of type command only from Verified organizations (finding `LOCAL_CODE_HOOK_COMMAND`).
+- **Edition sources:** the files that differ live in `editions/directory/`.
 
 ## Adopting in a project
 
-This section lists the steps that connect a project to the guild.
+This section lists the steps that connect a project to daguild.
 
-1. **Copy the charter.** Copy `charter/TEMPLATE.md` to `<project>/.claude/guild.md` and fill every section (`charter/SCHEMA.md` defines each one).
+1. **Copy the charter.** Copy `charter/TEMPLATE.md` to `<project>/.claude/daguild.md` and fill every section (`charter/SCHEMA.md` defines each one).
 2. **Point at it.** Point the project's root `CLAUDE.md` at the charter with one line.
 3. **Keep rules scoped.** Keep project-specific rules in `.claude/rules/*.md` with `paths:` frontmatter, and list them in the charter's Rules section.
-4. **Choose git handling.** Keep the project's own `git` skill or conventions and leave git handling off, or turn it on to use the guild `git` skill and guard instead (see Git handling).
+4. **Choose git handling.** Keep the project's own `git` skill or conventions and leave git handling off, or turn it on to use the daguild `git` skill and guard instead (see Git handling).
 5. **Remove collisions.** Delete any project-local agents or skills whose names collide with the plugin's. Project agents shadow plugin agents, and user skills shadow project skills.
 
 ## Requirements
@@ -167,9 +199,9 @@ This section maps the files in the repository.
 ```
 .claude-plugin/plugin.json      plugin manifest
 .claude-plugin/marketplace.json local marketplace entry
-.claude/guild.md                charter of this repository (verify commands, areas, rules)
+.claude/daguild.md                charter of this repository (verify commands, areas, rules)
 agents/                         the six agent definitions
-skills/guild/                   DAG.md (binding rules) + the /guild force-the-walk skill
+skills/daguild/                   DAG.md (binding rules) + the /daguild force-the-walk skill
 skills/git/                     generic git workflow skill, active only with git handling on
 hooks/                          hooks.json + the sh hook scripts and their .ps1 PowerShell twins
 hooks/lib/                      shared libraries (sh, each with a .ps1 twin): payload field access, switch table
@@ -181,16 +213,17 @@ context/always-on.md            style + universal rules, injected at session sta
 context/procedure.md            default operating procedure (the DAG walk), injected at session start
 charter/SCHEMA.md               charter contract (headings, consumers, content)
 charter/TEMPLATE.md             blank charter to copy into a project
-workflows/cleanup-audit.js      /guild:cleanup-audit: cleanup-pass audit wave; allow rule Workflow(cleanup-audit)
-workflows/review-wave.js        /guild:review-wave: pre-commit review wave over one diff; allow rule Workflow(review-wave)
+workflows/cleanup-audit.js      /daguild:cleanup-audit: cleanup-pass audit wave; allow rule Workflow(cleanup-audit)
+workflows/review-wave.js        /daguild:review-wave: pre-commit review wave over one diff; allow rule Workflow(review-wave)
 tests/run.sh                    hook contract suite (sh tests/run.sh), fixtures under tests/fixtures/
 tests/run.ps1                   the same contract for the PowerShell twins (pwsh -NoProfile -File tests/run.ps1)
 tests/cases/                    payload-driven cases shared by both runners, one file per hook (format in each file)
-editions/directory/             sources of the directory edition: output style header, overlay guild skill, edition README
+editions/directory/             sources of the directory edition: output style header, overlay daguild skill, edition README
 tools/build-release.sh          builds the slim tree of the full edition (hooks compiled in)
 tools/check-release-tree.sh     refuses script shapes the directory validator cannot follow
 tools/build-directory.sh        builds the hookless directory edition
 tools/lib/build-tree.sh         output-tree helpers both builders share
+tools/codemods/rename-to-daguild.sh one-shot rename of a consumer checkout from guild to daguild (path moves and word rewrite); refuses the already-renamed plugin repository
 LICENSE                         license
 .gitattributes                  LF line endings for every text file (sh breaks on CRLF)
 ```
@@ -202,8 +235,8 @@ This section explains how to turn hooks and procedure steps on or off per user o
 Three files are read in order, and a later file wins (git handling is not a switch in these files: the plugin option is its only control, see Git handling):
 
 1. `<plugin root>/config/defaults.conf`: the shipped defaults; it also declares the known keys.
-2. `~/.claude/guild.conf`: user overrides.
-3. `<project>/.claude/guild.conf`: project overrides.
+2. `~/.claude/daguild.conf`: user overrides.
+3. `<project>/.claude/daguild.conf`: project overrides.
 
 Grammar:
 
@@ -215,9 +248,9 @@ Grammar:
 
 Reporting and fallbacks:
 
-- **Changed-switch report:** when any switch differs from its shipped default, the always-on context ends with a `## Guild switches changed` section listing each such switch as `key=value`, comma separated (for example `git.handling=on, review.security=off`), so the session knows what departs from the defaults; with the shipped defaults the section is absent.
+- **Changed-switch report:** when any switch differs from its shipped default, the always-on context ends with a `## DaGuild switches changed` section listing each such switch as `key=value`, comma separated (for example `git.handling=on, review.security=off`), so the session knows what departs from the defaults; with the shipped defaults the section is absent.
 - **Missing defaults file:** if `config/defaults.conf` is missing, every key reads as on except `git.handling`, which stays off unless the plugin option turns it on.
-- **Templated text:** the `procedure.*`, `review.*` and `docs.sync` switches remove the matching text from the injected procedure, and `git.handling` picks the Step 6 commit sentence; `skills/guild/DAG.md` itself is not templated.
+- **Templated text:** the `procedure.*`, `review.*` and `docs.sync` switches remove the matching text from the injected procedure, and `git.handling` picks the Step 6 commit sentence; `skills/daguild/DAG.md` itself is not templated.
 
 The workflows (`workflows/*.js`) ignore the review switches: they always run every dimension they define. With a review switch off, pass only the dimensions you want through the main thread, which dispatches them itself instead of running the workflow.
 
@@ -227,23 +260,23 @@ Find the key you want to change in the first column; the last column says what y
 |---|---|---|
 | `style.terse` | on | Drops `## Reply style` (terse replies, length budget) from the always-on context |
 | `rules.universal` | on | Drops `## Universal code rules` from the always-on context |
-| `procedure.default_mode` | on | The procedure is not injected at session start; `/guild <task>` reads `context/procedure.md` on demand |
+| `procedure.default_mode` | on | The procedure is not injected at session start; `/daguild <task>` reads `context/procedure.md` on demand |
 | `procedure.investigate_first` | on | The architect may be dispatched without an investigator site map |
 | `procedure.design_gate` | on | Drops Step 3a (vanilla `Plan` options on the architect route) |
 | `procedure.sharding` | on | Work over 12 files or more than one area is no longer forced into parallel slices |
 | `procedure.cleanup_pass` | on | Drops the cleanup pass route and section |
-| `review.norms` | on | No `guild:reviewer` pass on every passed edit |
+| `review.norms` | on | No `daguild:reviewer` pass on every passed edit |
 | `review.correctness` | on | No `code-review` skill pass on substantive diffs |
-| `review.security` | on | No `guild:security` diff gate; security-relevant diffs ship without a security review |
+| `review.security` | on | No `daguild:security` diff gate; security-relevant diffs ship without a security review |
 | `docs.sync` | on | Drops the DAG.md `## Docs sync` step at phase close |
 | `hooks.prompt_reinforce` | on | No per-prompt reinforcement line |
 | `hooks.emoji_scan` | on | Emoji in written files are no longer rejected |
-| `hooks.receipt_check` | on | Guild subagents may stop without a terminal token on line 1 |
+| `hooks.receipt_check` | on | DaGuild subagents may stop without a terminal token on line 1 |
 
-Example, `<project>/.claude/guild.conf` for a project whose security review and emoji policy live elsewhere:
+Example, `<project>/.claude/daguild.conf` for a project whose security review and emoji policy live elsewhere:
 
 ```
-# Security review runs outside the guild for this project.
+# Security review runs outside daguild for this project.
 review.security = off
 # Emoji are allowed in this project's files.
 hooks.emoji_scan = off
@@ -251,20 +284,20 @@ hooks.emoji_scan = off
 
 ## Model and effort per agent
 
-This section explains how to change each agent's model and reasoning effort. They are plugin options, not `guild.conf` switches.
+This section explains how to change each agent's model and reasoning effort. They are plugin options, not `daguild.conf` switches.
 
 - **Option names:** `investigator_model`, `investigator_effort`, `builder_model`, `builder_effort`, `architect_model`, `architect_effort`, `reviewer_model`, `reviewer_effort`, `security_model`, `security_effort`, `scribe_model`, `scribe_effort`.
 - **Allowed values:** a model is one of `haiku`, `sonnet`, `opus`, `fable` or `inherit` (the session's model); an effort is one of `low`, `medium`, `high`, `xhigh` or `max`.
 - **Defaults:** the shipped agent frontmatter: the models in the table above, effort `high` for the architect, reviewer and security agents and `medium` for the rest.
-- **Security agent:** the guild never downgrades `guild:security`; lowering its options is your call.
+- **Security agent:** daguild never downgrades `daguild:security`; lowering its options is your call.
 
 How a change takes effect:
 
 - **Where to set:** Claude Code shows the options in the prompt when the plugin is installed and later in `/config`, and passes them to the hooks as `CLAUDE_PLUGIN_OPTION_<AGENT>_MODEL` and `CLAUDE_PLUGIN_OPTION_<AGENT>_EFFORT`.
 - **Rendering:** a change is rendered on the next prompt (and at every session start) by `hooks/render-agents.sh`: when an option holds an allowed value that differs from the `model:` or `effort:` line in `<plugin root>/agents/<agent>.md`, that frontmatter line is rewritten in place and nothing else in the file changes.
-- **Notice and reload:** the hook then prints `GUILD AGENTS RENDERED: <agent> model=<m> effort=<e>; ... Run the reload-plugins command to apply.`; run `/reload-plugins` to load the rewritten agents in the current session.
+- **Notice and reload:** the hook then prints `DAGUILD AGENTS RENDERED: <agent> model=<m> effort=<e>; ... Run the reload-plugins command to apply.`; run `/reload-plugins` to load the rewritten agents in the current session.
 - **Safe failure:** an unset or unknown value is ignored, and the hook writes nowhere outside `agents/`. An agent whose rewrite fails is skipped, the others still render, and the notice lists only the agents rendered.
-- **Workflows:** the workflows pass no effort to `guild:*` agents, so these options also hold inside a workflow; only the default correctness agent of `review-wave` takes the workflow's `effort` argument.
+- **Workflows:** the workflows pass no effort to `daguild:*` agents, so these options also hold inside a workflow; only the default correctness agent of `review-wave` takes the workflow's `effort` argument.
 
 Effect on a checkout:
 
@@ -275,7 +308,7 @@ Effect on a checkout:
 
 This section explains the optional git conventions and guard the plugin can enforce.
 
-Off by default. While it is off, nothing git-related from the guild applies:
+Off by default. While it is off, nothing git-related from daguild applies:
 
 - the git guard hook exits without checking;
 - the `git` skill stops at its first line;
@@ -296,7 +329,7 @@ How to enable it:
 
 - **Prompt or config:** answer the prompt Claude Code shows when the plugin is enabled, or change "Git handling" later in `/config`.
 - **Option plumbing:** Claude Code passes the option to the hooks as `CLAUDE_PLUGIN_OPTION_GIT_HANDLING` and into the skill as `${user_config.git_handling}`.
-- **Only switch:** the plugin option is the only switch: a `git.handling` line in any `guild.conf`, the shipped defaults included, is ignored.
+- **Only switch:** the plugin option is the only switch: a `git.handling` line in any `daguild.conf`, the shipped defaults included, is ignored.
 
 ## Hooks
 
@@ -321,14 +354,14 @@ Read the table by event: each row is one hook entry, with what it does, how it e
 
 | Event | Script | What it does | Exit behaviour | Switch |
 |---|---|---|---|---|
-| SessionStart | `session-context.sh context/always-on.md` | Injects the style and universal rules (sections dropped per switch), plus a `## Guild switches changed` list when any switch differs from its shipped default | Exit 0; never blocks | `style.terse`, `rules.universal` |
+| SessionStart | `session-context.sh context/always-on.md` | Injects the style and universal rules (sections dropped per switch), plus a `## DaGuild switches changed` list when any switch differs from its shipped default | Exit 0; never blocks | `style.terse`, `rules.universal` |
 | SessionStart | `session-context.sh context/procedure.md` | Injects the default operating procedure with the plugin root substituted; prints nothing when the default mode is off | Exit 0; never blocks | `procedure.default_mode` and the procedure switches |
-| SessionStart | `render-agents.sh` | Renders the per-agent model and effort options into the agent frontmatter; prints the `GUILD AGENTS RENDERED` notice only when a file changed | Exit 0; never blocks | none (the `<agent>_model` / `<agent>_effort` plugin options) |
+| SessionStart | `render-agents.sh` | Renders the per-agent model and effort options into the agent frontmatter; prints the `DAGUILD AGENTS RENDERED` notice only when a file changed | Exit 0; never blocks | none (the `<agent>_model` / `<agent>_effort` plugin options) |
 | UserPromptSubmit | `prompt-reinforce.sh` | Per-prompt reinforcement line: six-line reply budget, universal code rules, procedure walk | Exit 0; never blocks | `hooks.prompt_reinforce` |
 | UserPromptSubmit | `render-agents.sh` | Same render as at session start, so an option changed in `/config` applies on the next prompt | Exit 0; never blocks | none (the plugin options) |
 | PreToolUse (`Bash`, `PowerShell`) | `git-guard.sh` | Denies AI attribution in `git commit` and `gh pr create` / `gh pr edit`, a hook bypass (`--no-verify`; `-n` on `git commit`) and a forced push (`--force`, `-f`; `--force-with-lease` allowed) | Exit 2 with the reason on stderr on a match; exit 0 otherwise and whenever the switch is off | `git.handling` (plugin option only) |
 | PostToolUse (`Edit`, `Write`) | `emoji-scan.sh` | Scans the written file (inside the project, non-binary) for emoji | Exit 2 naming the first hit line, reported to the agent; exit 0 otherwise | `hooks.emoji_scan` |
-| SubagentStop | `receipt-check.sh` | Checks the receipt contract (first-line terminal token) on `guild:*` agents | Exit 2 blocks the stop once on a malformed receipt; allows otherwise | `hooks.receipt_check` |
+| SubagentStop | `receipt-check.sh` | Checks the receipt contract (first-line terminal token) on `daguild:*` agents | Exit 2 blocks the stop once on a malformed receipt; allows otherwise | `hooks.receipt_check` |
 
 Notes on the table:
 
@@ -344,7 +377,7 @@ This section is the plugin's footprint statement: what executes, what it touches
 - **Runs:** six hook scripts, each a POSIX sh script with a PowerShell twin, and nothing else on its own.
 - **Launched by the harness:** `session-context` and `render-agents` at SessionStart, `prompt-reinforce` and `render-agents` at UserPromptSubmit, `git-guard` at PreToolUse on `Bash` and `PowerShell`, `emoji-scan` at PostToolUse on `Edit` and `Write`, and `receipt-check` at SubagentStop.
 - **No launcher:** each command names its script by the full `${CLAUDE_PLUGIN_ROOT}` path (see Hooks); there is no package launcher, no install step, and no interpreter other than sh or PowerShell.
-- **Reads:** the tool-call payload on stdin; `config/defaults.conf` inside the plugin; `~/.claude/guild.conf` and `<project>/.claude/guild.conf` when present; the file just written, for the emoji scan, only when it lies inside the project directory; the plugin's own `agents/*.md`; the `CLAUDE_PLUGIN_OPTION_*` variables the harness exports for the plugin's options.
+- **Reads:** the tool-call payload on stdin; `config/defaults.conf` inside the plugin; `~/.claude/daguild.conf` and `<project>/.claude/daguild.conf` when present; the file just written, for the emoji scan, only when it lies inside the project directory; the plugin's own `agents/*.md`; the `CLAUDE_PLUGIN_OPTION_*` variables the harness exports for the plugin's options.
 - **Writes:** only `agents/<name>.md` frontmatter lines inside the plugin folder, through the option render hook, with values restricted to the allowlists in Model and effort per agent. Nothing under the user's home, nothing in the project.
 - **Sends and fetches:** nothing. No network access of any kind, no telemetry, no credentials read.
 - **Personal data:** none read or stored.
