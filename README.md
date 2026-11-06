@@ -9,6 +9,7 @@ A project-agnostic Claude Code plugin that routes coding work through a crew of 
 - [What it is](#what-it-is)
 - [The DAG](#the-dag)
 - [Install](#install)
+- [Editions](#editions)
 - [Adopting in a project](#adopting-in-a-project)
 - [Requirements](#requirements)
 - [Layout](#layout)
@@ -120,6 +121,21 @@ Enable in `~/.claude/settings.json`:
 
 Update with `/plugin update guild`.
 
+## Editions
+
+This section states the two editions of the plugin and how they differ.
+
+- **Full edition:** the `main` branch, hooks included; installed from the GitHub marketplace as described in Install. `tools/build-release.sh` produces the slim, self-contained build of this edition (hooks compiled in), published on the `release` branch; the Claude Directory tracks the directory edition on `claude-directory` instead.
+- **Claude Directory edition:** generated from `main` by `sh tools/build-directory.sh OUTDIR` (OUTDIR an empty directory) and published on the branch `claude-directory`, which the Claude Directory tracks. It exists because the directory accepts hooks of type command only from Verified organizations (finding `LOCAL_CODE_HOOK_COMMAND`).
+- **Edition sources:** the files that differ live in `editions/directory/`.
+
+The directory edition has no hooks:
+
+- **Context:** an output style `guild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
+- **Skill overlay:** `editions/directory/skills/guild/SKILL.md` replaces the guild skill and gives the resolved plugin paths.
+- **Manifest and README:** `plugin.json` drops the per-agent model and effort options; `editions/directory/README.md` becomes its `README.md`.
+- **Lost against the full edition:** the per-prompt reminder, the `guild.conf` switches, the git guard, the emoji scan, the receipt check, the per-agent model and effort options, and the two workflows (the directory validator holds workflow JavaScript for manual review as scripts it cannot follow).
+
 ## Adopting in a project
 
 This section lists the steps that connect a project to the guild.
@@ -170,6 +186,11 @@ workflows/review-wave.js        /guild:review-wave: pre-commit review wave over 
 tests/run.sh                    hook contract suite (sh tests/run.sh), fixtures under tests/fixtures/
 tests/run.ps1                   the same contract for the PowerShell twins (pwsh -NoProfile -File tests/run.ps1)
 tests/cases/                    payload-driven cases shared by both runners, one file per hook (format in each file)
+editions/directory/             sources of the directory edition: output style header, overlay guild skill, edition README
+tools/build-release.sh          builds the slim tree of the full edition (hooks compiled in)
+tools/check-release-tree.sh     refuses script shapes the directory validator cannot follow
+tools/build-directory.sh        builds the hookless directory edition
+tools/lib/build-tree.sh         output-tree helpers both builders share
 LICENSE                         license
 .gitattributes                  LF line endings for every text file (sh breaks on CRLF)
 ```
