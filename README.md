@@ -155,10 +155,25 @@ The old file names are no longer read.
 
 This section states the two editions of the plugin and how they differ.
 
-The full edition has hooks; the Claude Directory edition has none:
+In the full edition, hooks inject the procedure and the universal rules at session start and repeat a short reminder on every prompt, and three hooks enforce part of the rules: the emoji scan, the receipt check, and the opt-in git guard (off by default). The Claude Directory edition runs no scripts at all: the same procedure and rules reach Claude through the output style, as instructions only, and nothing enforces them. Install exactly one.
 
-- **Lost against the full edition:** the per-prompt reminder, the `daguild.conf` switches, the git guard, the emoji scan, the receipt check, the per-agent model and effort options, and the two workflows (the directory validator holds workflow JavaScript for manual review as scripts it cannot follow).
-- **Context:** an output style `daguild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
+| | Full edition | Claude Directory edition |
+|---|---|---|
+| Get it from | GitHub marketplace `NatalJR/daguild` (or a local checkout) | the Claude Directory, via `/plugin` |
+| Six agents, `/daguild` skill, DAG rules, charter `.claude/daguild.md` | same | same |
+| How the procedure reaches Claude | injected at session start by a hook | output style `daguild`, applied automatically and sent with every request; while the plugin is enabled it replaces any output style you selected |
+| Per-prompt reminder | yes | no (the output style is sent with every request instead) |
+| `daguild.conf` switches | yes | no, every switch fixed at its default |
+| Git handling option | generic `git` skill plus a guard hook denying AI attribution, `--no-verify` and forced pushes | `git` skill only, no guard hook |
+| Emoji scan on file edits | yes | no |
+| Receipt check on subagent reports | yes | no |
+| Per-agent model and effort options | yes | no, models and efforts pinned |
+| Workflows `/daguild:cleanup-audit`, `/daguild:review-wave` | yes | no (the directory validator holds workflow JavaScript for manual review as scripts it cannot follow) |
+| Scripts run on your machine | hooks (see Hooks) | none |
+
+How the Directory edition is built:
+
+- **Context:** the output style `daguild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
 - **Skill overlay:** `editions/directory/skills/daguild/SKILL.md` replaces the daguild skill and gives the resolved plugin paths.
 - **Manifest and README:** `plugin.json` drops the per-agent model and effort options; `editions/directory/README.md` becomes its `README.md`.
 
