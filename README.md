@@ -9,7 +9,6 @@ A project-agnostic Claude Code plugin that routes coding work through a crew of 
 - [What it is](#what-it-is)
 - [The DAG](#the-dag)
 - [Install](#install)
-- [Migrating from guild](#migrating-from-guild)
 - [Editions](#editions)
 - [Adopting in a project](#adopting-in-a-project)
 - [Requirements](#requirements)
@@ -132,25 +131,6 @@ Then, inside Claude Code:
 
 Update with `/plugin update daguild`.
 
-## Migrating from guild
-
-This section covers moving an existing install and project from the plugin's former name, guild; the rename landed in 0.4.0.
-
-Existing install, in `/plugin`:
-
-1. Uninstall `guild@guild` and remove the `guild` marketplace.
-2. Add the new marketplace: `NatalJR/daguild` for a GitHub install; for a local-checkout install, re-add your checkout path with `claude plugin marketplace add <path>`, since the marketplace name comes from the checkout's `marketplace.json`.
-3. Install `daguild@daguild`.
-4. Settings and options: if you wrote the entry by hand, replace `guild@guild` with `daguild@daguild` under `enabledPlugins` in `~/.claude/settings.json`. Plugin options belong to the plugin id, so git handling and the per-agent model and effort options return to their defaults; set them again in `/config` or at the install prompt.
-
-Per project:
-
-- **Charter:** rename `.claude/guild.md` to `.claude/daguild.md`.
-- **Switch files:** rename `guild.conf` to `daguild.conf` in `~/.claude/` and in the project's `.claude/` where present.
-- **References:** `guild:*` agents become `daguild:*`, and `/guild` becomes `/daguild`.
-
-The old file names are no longer read.
-
 ## Editions
 
 This section states the two editions of the plugin and how they differ.
@@ -238,7 +218,6 @@ tools/build-release.sh          builds the slim tree of the full edition (hooks 
 tools/check-release-tree.sh     refuses script shapes the directory validator cannot follow
 tools/build-directory.sh        builds the hookless directory edition
 tools/lib/build-tree.sh         output-tree helpers both builders share
-tools/codemods/rename-to-daguild.sh one-shot rename of a consumer checkout from guild to daguild (path moves and word rewrite); refuses the already-renamed plugin repository
 LICENSE                         license
 .gitattributes                  LF line endings for every text file (sh breaks on CRLF)
 ```

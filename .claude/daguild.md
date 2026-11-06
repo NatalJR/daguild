@@ -31,7 +31,7 @@ Hook scripts are exercised by piping a JSON payload on stdin and asserting the e
 - workflows: `workflows/**`
 - tests: `tests/**`
 - editions: `editions/**` (directory edition sources)
-- tools: `tools/**` (release and directory edition builders, release-tree checker, shared `tools/lib/**`, one-shot codemods `tools/codemods/**`)
+- tools: `tools/**` (release and directory edition builders, release-tree checker, shared `tools/lib/**`)
 - docs: `README.md`, `LICENSE`, `.claude-plugin/**`
 
 ## Rules
