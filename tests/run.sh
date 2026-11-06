@@ -1068,6 +1068,130 @@ check_edition_manifest() {
     "$(grep -F '"version"' "$EDITION_TREE/.claude-plugin/plugin.json")"
 }
 
+# Prints the edition's agent files whose frontmatter has a top-level skills key.
+agents_with_skills_key() {
+  for agent_file in "$EDITION_TREE"/agents/*.md; do
+    awk '{ sub(/\r$/, "") } NR == 1 && $0 == "---" { inside = 1; next } inside && $0 == "---" { exit }
+      inside && /^skills[ \t]*:/ { print FILENAME; exit }' "$agent_file"
+  done
+}
+
+check_edition_agent_frontmatter() {
+  describe 'directory edition: no agent frontmatter has a skills key'
+  expect_equal '' "$(agents_with_skills_key)"
+  expect_edition_text 'security agent keeps its name' agents/security.md 'name: security'
+  expect_edition_text 'security agent still invokes security-review' agents/security.md 'security-review'
+  describe 'directory edition: security agent is its source minus the skills line'
+  expect_equal "$(grep -v -E '^skills[[:space:]]*:' "$REPO_ROOT/agents/security.md")" \
+    "$(cat "$EDITION_TREE/agents/security.md")"
+}
+
+# DIR: copies the repository's working tree, .git aside, into DIR.
+copy_repository() {
+  mkdir -p "$1"
+  for repository_entry in "$REPO_ROOT"/* "$REPO_ROOT"/.[!.]*; do
+    [ -e "$repository_entry" ] && [ "${repository_entry##*/}" != .git ] && cp -R "$repository_entry" "$1/"
+  done
+}
+
+# Builds from a scratch copy of the repository whose builder agent carries a frontmatter key the
+# Directory refuses; expects a refusal naming the finding.
+check_edition_refuses_unaccepted_frontmatter_key() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 2 { print "color: red" } { print }' "$REPO_ROOT/agents/builder.md" \
+    >"$SCRATCH_DIR/repository/agents/builder.md"
+  describe 'directory edition: a frontmatter key outside the accepted list is refused'
+  refusal=$(sh "$SCRATCH_DIR/repository/tools/build-directory.sh" "$SCRATCH_DIR/edition" 2>&1) &&
+    { fail 'build exited 0'; return 0; }
+  contains "$refusal" 'LOCAL_CODE_FRONTMATTER_KEY' || { fail "refusal lacks LOCAL_CODE_FRONTMATTER_KEY: $refusal"; return 0; }
+  pass
+}
+
+# DESCRIPTION FRAGMENT: builds from the scratch copy under SCRATCH_DIR/repository; expects a refusal
+# naming the finding and holding FRAGMENT.
+expect_edition_frontmatter_refusal() {
+  describe "directory edition: $1 is refused"
+  refusal=$(sh "$SCRATCH_DIR/repository/tools/build-directory.sh" "$SCRATCH_DIR/edition" 2>&1) &&
+    { fail 'build exited 0'; return 0; }
+  contains "$refusal" 'LOCAL_CODE_FRONTMATTER_KEY' || { fail "refusal lacks LOCAL_CODE_FRONTMATTER_KEY: $refusal"; return 0; }
+  contains "$refusal" "$2" || { fail "refusal lacks [$2]: $refusal"; return 0; }
+  pass
+}
+
+# Builds from a scratch copy of the repository whose git skill carries a quoted frontmatter key.
+check_edition_refuses_quoted_frontmatter_key() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 2 { print "\"hooks\": [x]" } { print }' "$REPO_ROOT/skills/git/SKILL.md" \
+    >"$SCRATCH_DIR/repository/skills/git/SKILL.md"
+  expect_edition_frontmatter_refusal 'a quoted frontmatter key' 'is not a plain key'
+}
+
+# Builds from a scratch copy of the repository whose git skill opens with a UTF-8 byte order mark.
+check_edition_refuses_frontmatter_byte_order_mark() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  { printf '\357\273\277'; cat "$REPO_ROOT/skills/git/SKILL.md"; } >"$SCRATCH_DIR/repository/skills/git/SKILL.md"
+  expect_edition_frontmatter_refusal 'a frontmatter opener after a byte order mark' \
+    'frontmatter opener is not exactly ---'
+}
+
+# Builds from a scratch copy of the repository whose git skill opens with --- and a trailing space.
+check_edition_refuses_frontmatter_opener_trailing_space() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 1 { print "--- "; next } { print }' "$REPO_ROOT/skills/git/SKILL.md" \
+    >"$SCRATCH_DIR/repository/skills/git/SKILL.md"
+  expect_edition_frontmatter_refusal 'a frontmatter opener with a trailing space' \
+    'frontmatter opener is not exactly ---'
+}
+
+# Builds from a scratch copy of the repository whose builder agent carries a tab-indented key.
+check_edition_refuses_tab_indented_frontmatter_key() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 2 { print "\thooks: [x]" } { print }' "$REPO_ROOT/agents/builder.md" \
+    >"$SCRATCH_DIR/repository/agents/builder.md"
+  expect_edition_frontmatter_refusal 'a tab-indented frontmatter key' 'is not a plain key'
+}
+
+# Builds from a scratch copy of the repository whose builder agent hides a second key behind a lone
+# carriage return on its name line.
+check_edition_refuses_frontmatter_lone_carriage_return() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk '!renamed && /^name:/ { printf "%s\rhooks: [x]\n", "name: builder"; renamed = 1; next } { print }' \
+    "$REPO_ROOT/agents/builder.md" >"$SCRATCH_DIR/repository/agents/builder.md"
+  expect_edition_frontmatter_refusal 'a lone carriage return in the frontmatter' \
+    'frontmatter holds a control character'
+}
+
+# Builds from a scratch copy of the repository whose builder agent carries a key whose colon is not
+# followed by a space.
+check_edition_refuses_frontmatter_colon_without_space() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 2 { print "tools:hooks: [x]" } { print }' "$REPO_ROOT/agents/builder.md" \
+    >"$SCRATCH_DIR/repository/agents/builder.md"
+  expect_edition_frontmatter_refusal 'a frontmatter key colon without a following space' 'is not a plain key'
+}
+
+# Builds from a scratch copy of the repository whose builder agent carries a skills list split by a
+# blank line and a column-0 comment; expects the edition's builder frontmatter to lose the whole list.
+check_edition_drops_skills_across_blank_line() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 2 { print "skills:"; print "  - a"; print ""; print "# c"; print "  - b" } { print }' \
+    "$REPO_ROOT/agents/builder.md" >"$SCRATCH_DIR/repository/agents/builder.md"
+  describe 'directory edition: a skills list split by a blank line and a comment is dropped whole'
+  build_output=$(sh "$SCRATCH_DIR/repository/tools/build-directory.sh" "$SCRATCH_DIR/edition" 2>&1) ||
+    { fail "build failed: $build_output"; return 0; }
+  kept_lines=$(awk '{ sub(/\r$/, "") } NR == 1 && $0 == "---" { inside = 1; next } inside && $0 == "---" { exit }
+    inside && (/^skills[ \t]*:/ || $0 == "  - b") { print }' "$SCRATCH_DIR/edition/agents/builder.md")
+  expect_equal '' "$kept_lines"
+}
+
 build_directory_edition
 describe 'directory edition: build exits 0'
 if [ "$EDITION_EXIT" -eq 0 ]; then
@@ -1076,10 +1200,19 @@ if [ "$EDITION_EXIT" -eq 0 ]; then
   check_edition_output_style
   check_edition_text_edits
   check_edition_manifest
+  check_edition_agent_frontmatter
 else
   fail "exit $EDITION_EXIT, the other directory edition cases are skipped: $EDITION_OUTPUT"
 fi
 check_edition_refuses_non_empty_outdir
+check_edition_refuses_unaccepted_frontmatter_key
+check_edition_refuses_quoted_frontmatter_key
+check_edition_refuses_frontmatter_byte_order_mark
+check_edition_refuses_frontmatter_opener_trailing_space
+check_edition_refuses_tab_indented_frontmatter_key
+check_edition_refuses_frontmatter_lone_carriage_return
+check_edition_refuses_frontmatter_colon_without_space
+check_edition_drops_skills_across_blank_line
 
 # ---------------------------------------------------------------- summary
 

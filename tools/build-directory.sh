@@ -9,7 +9,9 @@
 #   JavaScript as scripts it cannot follow.
 # - agents/: each shipped agents/<name>.md must pin in its frontmatter the model and effort that
 #   are the defaults of <name>_model and <name>_effort in .claude-plugin/plugin.json (the render
-#   hook may have rewritten the working-tree agents from a maintainer's options).
+#   hook may have rewritten the working-tree agents from a maintainer's options). The `skills`
+#   frontmatter key (skill preloading) is dropped with its continuation lines; every other line is
+#   kept byte for byte.
 # - .claude-plugin/plugin.json: every userConfig member whose key ends in _model or _effort is
 #   dropped (only the render hook applies them); git_handling stays (the git skill substitutes it);
 #   every other line is kept byte for byte, bar the comma of the member that ends up last.
@@ -28,9 +30,11 @@
 # not occur exactly once, an empty render, a render that keeps a {{ marker, the plugin root or a
 # `## DaGuild switches changed` section, a plugin.json that still declares a model or effort
 # option, lacks git_handling or has a comma
-# before a closing } or ], or a tree that holds hooks/, a file declaring a command hook, or an
-# agent or skill frontmatter with a hooks: key fails the build (exit 1; the tree is left for
-# inspection).
+# before a closing } or ], or a tree that holds hooks/, a file declaring a command hook, or a
+# frontmatter whose opener is not exactly ---, that holds a control character other than tab, whose
+# top-level lines are not plain keys (a key's colon followed by whitespace or the line end), that lacks
+# name or description, or that holds a key outside its kind's accepted list fails the build (exit 1;
+# the tree is left for inspection).
 # Helpers: tools/lib/build-tree.sh.
 # Dependencies: sh, awk, cat, cp, mkdir, mktemp, mv, rm, find, grep, tr.
 set -u
@@ -39,6 +43,11 @@ OVERLAY_DIR=editions/directory
 RENDERER=hooks/session-context.sh
 ROOT_PLACEHOLDER='<daguild>/'
 RENDER_DIR=''
+# The frontmatter keys the Directory accepts per file kind from a non-verified publisher (observed
+# 2026-11-06); any other key is finding LOCAL_CODE_FRONTMATTER_KEY.
+AGENT_FRONTMATTER_KEYS='name description tools model effort'
+SKILL_FRONTMATTER_KEYS='name description argument-hint'
+OUTPUT_STYLE_FRONTMATTER_KEYS='name description keep-coding-instructions force-for-plugin'
 
 fail() {
   printf 'build-directory: %s\n' "$1" >&2
@@ -127,6 +136,44 @@ check_agent_pins() {
     agent_name=${agent_name%.md}
     check_agent_pin "$agent_name" model
     check_agent_pin "$agent_name" effort
+  done
+}
+
+# FILE KEY: succeeds when the frontmatter of FILE has the top-level KEY.
+has_frontmatter_key() {
+  frontmatter "$1" | grep -q -E "^$2[[:space:]]*:([[:space:]]|$)"
+}
+
+# FILE KEY: prints FILE without the top-level frontmatter KEY and its continuation lines (indented,
+# `- ` items, # comments or blank); every other line is printed as read.
+without_frontmatter_key() {
+  awk -v key="$2" '
+    { line = $0; sub(/\r$/, "", line) }
+    NR == 1 && line == "---" { inside = 1; print; next }
+    inside && line == "---" { inside = 0 }
+    inside && dropping && line ~ /^([ \t]|- |#|$)/ { next }
+    { dropping = 0 }
+    inside && index(line, key) == 1 && substr(line, length(key) + 1) ~ /^[ \t]*:([ \t]|$)/ { dropping = 1; next }
+    { print }
+  ' "$1"
+}
+
+# FILE KEY: removes the top-level KEY from the frontmatter of FILE through a temporary file in the
+# same directory, rewriting FILE in place so it keeps its mode; FILE is left untouched when it
+# lacks KEY.
+drop_frontmatter_key() {
+  has_frontmatter_key "$1" "$2" || return 0
+  dropped=$(mktemp "$1.XXXXXX") || fail "cannot create a temporary file next to $1"
+  without_frontmatter_key "$1" "$2" >"$dropped" || { rm -f "$dropped"; fail "cannot drop $2 from $1"; }
+  cat "$dropped" >"$1" || { rm -f "$dropped"; fail "cannot rewrite $1"; }
+  rm -f "$dropped" || fail "cannot remove $dropped"
+}
+
+# The Directory refuses skill preloading from a non-verified publisher: the shipped agents lose
+# their skills key and invoke those skills through the Skill tool.
+drop_agent_skill_preloads() {
+  for agent_file in "$OUT"/agents/*.md; do
+    drop_frontmatter_key "$agent_file" skills
   done
 }
 
@@ -292,20 +339,86 @@ write_output_style() {
   } >"$OUT/output-styles/daguild.md"
 }
 
-# Fails when the frontmatter of a shipped agent or skill declares hooks.
-check_no_frontmatter_hooks() {
-  for declaring_file in "$OUT"/agents/*.md "$OUT"/skills/*/SKILL.md; do
-    [ -f "$declaring_file" ] || continue
-    ! frontmatter "$declaring_file" | grep -q -E '^hooks[[:space:]]*:' ||
-      fail "$declaring_file declares hooks in its frontmatter"
+# KEYS KEY: succeeds when the space-separated KEYS holds KEY.
+listed() {
+  case " $1 " in *" $2 "*) return 0 ;; esac
+  return 1
+}
+
+# FILE: prints the top-level keys of the frontmatter of FILE, one per line.
+frontmatter_keys() {
+  frontmatter "$1" | grep -E '^[A-Za-z0-9_-]+[[:space:]]*:([[:space:]]|$)' | awk -F: '{ key = $1; sub(/[ \t]+$/, "", key); print key }'
+}
+
+# FILE: succeeds when line 1 of FILE, CR stripped, starts with a UTF-8 byte order mark or starts
+# with --- without being exactly ---.
+has_malformed_frontmatter_opener() {
+  LC_ALL=C awk '
+    NR == 1 { sub(/\r$/, ""); malformed = index($0, "\357\273\277") == 1 || (index($0, "---") == 1 && $0 != "---"); exit }
+    END { exit !malformed }
+  ' "$1"
+}
+
+# FILE: prints the first frontmatter line of FILE that does not start with a space and is neither
+# blank, a # comment, a `- ` item nor a plain key (a line starting with a tab is reported).
+first_unplain_frontmatter_line() {
+  frontmatter "$1" | awk '
+    /^$/ || /^ / || /^#/ || /^- / || /^[A-Za-z0-9_-]+[[:space:]]*:([[:space:]]|$)/ { next }
+    { print; exit }
+  '
+}
+
+# FILE: succeeds when the frontmatter of FILE, trailing CRs stripped, holds a control character
+# other than tab.
+frontmatter_has_control_character() {
+  frontmatter "$1" | tr -d '\t\n' | LC_ALL=C grep -q '[[:cntrl:]]'
+}
+
+# FILE: fails unless FILE opens with exactly --- and its frontmatter holds no control character but
+# tab and is plain top-level keys that include name and description.
+check_frontmatter_shape() {
+  ! has_malformed_frontmatter_opener "$1" || fail "$1: frontmatter opener is not exactly --- (LOCAL_CODE_FRONTMATTER_KEY)"
+  ! frontmatter_has_control_character "$1" ||
+    fail "$1: frontmatter holds a control character (LOCAL_CODE_FRONTMATTER_KEY)"
+  unplain_line=$(first_unplain_frontmatter_line "$1")
+  [ -z "$unplain_line" ] || fail "$1: frontmatter line $unplain_line is not a plain key (LOCAL_CODE_FRONTMATTER_KEY)"
+  for required_key in name description; do
+    has_frontmatter_key "$1" "$required_key" ||
+      fail "$1: frontmatter lacks $required_key or is not recognized (LOCAL_CODE_FRONTMATTER_KEY)"
   done
+}
+
+# FILE ACCEPTED: fails when the frontmatter of FILE is not plain keys with name and description or a
+# top-level frontmatter key of FILE is not in the space-separated ACCEPTED.
+check_frontmatter_keys() {
+  check_frontmatter_shape "$1"
+  for frontmatter_key in $(frontmatter_keys "$1"); do
+    listed "$2" "$frontmatter_key" ||
+      fail "$1: frontmatter key $frontmatter_key is outside the Directory's accepted list (LOCAL_CODE_FRONTMATTER_KEY)"
+  done
+}
+
+# ACCEPTED FILE...: checks every FILE that exists against the space-separated ACCEPTED keys.
+check_kind_frontmatter_keys() {
+  accepted_keys=$1
+  shift
+  for shipped_file in "$@"; do
+    [ -f "$shipped_file" ] || continue
+    check_frontmatter_keys "$shipped_file" "$accepted_keys"
+  done
+}
+
+check_accepted_frontmatter_keys() {
+  check_kind_frontmatter_keys "$AGENT_FRONTMATTER_KEYS" "$OUT"/agents/*.md
+  check_kind_frontmatter_keys "$SKILL_FRONTMATTER_KEYS" "$OUT"/skills/*/SKILL.md
+  check_kind_frontmatter_keys "$OUTPUT_STYLE_FRONTMATTER_KEYS" "$OUT"/output-styles/*.md
 }
 
 check_no_hooks() {
   [ ! -e "$OUT/hooks" ] || fail 'the tree holds hooks/'
   command_hooks=$(find "$OUT" -type f -exec grep -l -E '"type"[[:space:]]*:[[:space:]]*"command"' {} +)
   [ -z "$command_hooks" ] || fail "files declare a command hook: $command_hooks"
-  check_no_frontmatter_hooks
+  check_accepted_frontmatter_keys
 }
 
 [ "$#" -eq 1 ] && [ -n "$1" ] || fail 'usage: sh tools/build-directory.sh OUTDIR'
@@ -315,6 +428,7 @@ cd "$REPO_ROOT" || fail "cannot enter $REPO_ROOT"
 ROOT_FORWARD=$(printf '%s' "$REPO_ROOT" | tr '\\' '/')
 copy_shipped_files
 check_agent_pins
+drop_agent_skill_preloads
 write_plugin_manifest
 copy_overlay_files
 apply_edition_edits

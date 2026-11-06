@@ -156,6 +156,7 @@ How the Directory edition is built:
 - **Context:** the output style `daguild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
 - **Skill overlay:** `editions/directory/skills/daguild/SKILL.md` replaces the daguild skill and gives the resolved plugin paths.
 - **Manifest and README:** `plugin.json` drops the per-agent model and effort options; `editions/directory/README.md` becomes its `README.md`.
+- **Frontmatter:** agents drop the `skills` key, so the security agent invokes `security-review` through the Skill tool instead of preloading it; the build fails on any frontmatter key outside the list the directory accepts from community plugins (finding `LOCAL_CODE_FRONTMATTER_KEY`).
 
 Maintainer notes:
 
