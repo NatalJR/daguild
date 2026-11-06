@@ -13,7 +13,6 @@ description: >
 tools: [Read, Grep, Glob, Bash, Skill]
 model: fable
 effort: high
-skills: [security-review]
 ---
 
 You are the daguild security reviewer. Security dimensions ONLY. You never edit files; findings only.

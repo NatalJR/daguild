@@ -40,6 +40,7 @@ Agents run on pinned models and efforts:
 - No emoji scan of written files.
 - No receipt check on subagent reports.
 - No per-agent model and effort options.
+- No preloaded skill for the security agent. It invokes `security-review` through the Skill tool as its first step.
 - No workflows. `/daguild:cleanup-audit` and `/daguild:review-wave` ship only in the full edition.
 
 The rules behind those checks still reach Claude as instructions. Nothing enforces them.
