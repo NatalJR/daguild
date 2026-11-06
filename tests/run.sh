@@ -979,6 +979,108 @@ printf '%s\n' 'environment' 'dir=./x' 'dir=..' 'n=.5' 'name=${file%.*}' \
 run_release_check
 expect_equal '0 []' "$CHECK_EXIT [$CHECK_OUTPUT]"
 
+# ---------------------------------------------------------------- directory edition
+
+# Builds the directory edition into a scratch directory; sets EDITION_TREE, EDITION_EXIT and
+# EDITION_OUTPUT.
+build_directory_edition() {
+  new_scratch_dir
+  EDITION_TREE="$SCRATCH_DIR/edition"
+  EDITION_OUTPUT=$(sh "$REPO_ROOT/tools/build-directory.sh" "$EDITION_TREE" 2>&1)
+  EDITION_EXIT=$?
+}
+
+# NAME FILE TEXT: FILE (relative to the edition tree) has a line containing TEXT.
+expect_edition_text() {
+  describe "directory edition: $1"
+  grep -q -F -- "$3" "$EDITION_TREE/$2" || { fail "$2 is missing or lacks [$3]"; return 0; }
+  pass
+}
+
+# NAME FILE TEXT: FILE (relative to the edition tree) exists and no line contains TEXT.
+expect_edition_lacks() {
+  describe "directory edition: $1"
+  [ -f "$EDITION_TREE/$2" ] || { fail "$2 is missing"; return 0; }
+  ! grep -q -F -- "$3" "$EDITION_TREE/$2" || { fail "$2 contains [$3]"; return 0; }
+  pass
+}
+
+# Prints the frontmatter lines of the edition's output style.
+output_style_frontmatter() {
+  awk 'NR == 1 && /^---$/ { inside = 1; next } inside && /^---$/ { exit } inside { print }' \
+    "$EDITION_TREE/output-styles/guild.md"
+}
+
+# LINE: the output style frontmatter holds LINE.
+expect_frontmatter_line() {
+  describe "directory edition: output style frontmatter has [$1]"
+  output_style_frontmatter | grep -q -x -F -- "$1" || { fail "frontmatter lacks [$1]"; return 0; }
+  pass
+}
+
+check_edition_layout() {
+  describe 'directory edition: no hooks/, config/, context/ or workflows/'
+  expect_equal '' "$(for shipped_dir in hooks config context workflows; do [ ! -e "$EDITION_TREE/$shipped_dir" ] || printf '%s ' "$shipped_dir"; done)"
+  describe 'directory edition: agents/ holds six files'
+  expect_equal '6' "$(($(find "$EDITION_TREE/agents" -type f | wc -l)))"
+  expect_edition_text 'guild skill names the DAG through the plugin root' skills/guild/SKILL.md \
+    '${CLAUDE_PLUGIN_ROOT}/skills/guild/DAG.md'
+}
+
+check_edition_output_style() {
+  expect_frontmatter_line 'force-for-plugin: true'
+  expect_frontmatter_line 'keep-coding-instructions: true'
+  expect_edition_text 'output style carries the procedure' output-styles/guild.md '## Operating procedure (default mode)'
+  expect_edition_text 'output style carries the reply style' output-styles/guild.md '## Reply style'
+  expect_edition_lacks 'output style keeps no {{ marker' output-styles/guild.md '{{'
+  expect_edition_lacks 'output style names no absolute plugin root' output-styles/guild.md "$REPO_ROOT/"
+  [ -z "$WINDOWS_ROOT_FORWARD" ] ||
+    expect_edition_lacks 'output style names no Windows plugin root' output-styles/guild.md "$WINDOWS_ROOT_FORWARD/"
+  expect_edition_text 'output style commits through the guild git skill' output-styles/guild.md \
+    'through the guild `git` skill'
+  expect_edition_lacks 'output style does not point at the project git skill' output-styles/guild.md \
+    "the project's git skill named under"
+  expect_edition_lacks 'output style lists no changed switches' output-styles/guild.md '## Guild switches changed'
+}
+
+check_edition_text_edits() {
+  expect_edition_lacks 'DAG.md does not name context/procedure.md' skills/guild/DAG.md 'context/procedure.md'
+  expect_edition_lacks 'DAG.md does not name the plugin options' skills/guild/DAG.md 'plugin options'
+  expect_edition_lacks 'DAG.md does not mention workflow scripts' skills/guild/DAG.md 'Workflow scripts follow'
+  expect_edition_lacks 'plugin.json does not mention a guard hook' .claude-plugin/plugin.json 'guard hook'
+}
+
+# Builds into a non-empty directory and expects a refusal.
+check_edition_refuses_non_empty_outdir() {
+  new_scratch_dir
+  printf 'kept\n' >"$SCRATCH_DIR/occupied"
+  describe 'directory edition: a non-empty OUTDIR is refused'
+  sh "$REPO_ROOT/tools/build-directory.sh" "$SCRATCH_DIR" >/dev/null 2>&1 && { fail 'build exited 0'; return 0; }
+  pass
+}
+
+check_edition_manifest() {
+  expect_edition_text 'plugin.json keeps git_handling' .claude-plugin/plugin.json '"git_handling"'
+  expect_edition_lacks 'plugin.json declares no model option' .claude-plugin/plugin.json '_model"'
+  expect_edition_lacks 'plugin.json declares no effort option' .claude-plugin/plugin.json '_effort"'
+  describe 'directory edition: plugin.json carries the version of the main manifest'
+  expect_equal "$(grep -F '"version"' "$REPO_ROOT/.claude-plugin/plugin.json")" \
+    "$(grep -F '"version"' "$EDITION_TREE/.claude-plugin/plugin.json")"
+}
+
+build_directory_edition
+describe 'directory edition: build exits 0'
+if [ "$EDITION_EXIT" -eq 0 ]; then
+  pass
+  check_edition_layout
+  check_edition_output_style
+  check_edition_text_edits
+  check_edition_manifest
+else
+  fail "exit $EDITION_EXIT, the other directory edition cases are skipped: $EDITION_OUTPUT"
+fi
+check_edition_refuses_non_empty_outdir
+
 # ---------------------------------------------------------------- summary
 
 finish

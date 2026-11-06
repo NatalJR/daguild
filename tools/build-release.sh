@@ -1,5 +1,8 @@
 #!/bin/sh
-# Builds the slim tree the Claude Directory tracks (the `release` branch) from the working tree.
+# Builds the slim, self-contained tree of the full edition (hooks compiled in) for the `release`
+# branch from the working tree. The Claude Directory tracks the hookless directory edition instead
+# (tools/build-directory.sh, branch `claude-directory`): it accepts command hooks only from
+# Verified organizations.
 # Usage: sh tools/build-release.sh OUTDIR   (OUTDIR must be absent or an empty directory)
 #
 # Copies only the shipped files, swaps README.release.md in as README.md, and compiles every hook
@@ -58,42 +61,14 @@ report_failure() {
   BUILD_FAILED=yes
 }
 
+# The directory of this script, which locates tools/lib/.
 script_directory() {
   script_dir=${0%/*}
   [ "$script_dir" != "$0" ] || script_dir=.
   printf '%s' "$script_dir"
 }
 
-# DIR: succeeds when DIR has no entry, hidden ones included.
-directory_is_empty() {
-  for entry in "$1"/* "$1"/.[!.]* "$1"/..?*; do
-    if [ -e "$entry" ] || [ -L "$entry" ]; then
-      return 1
-    fi
-  done
-  return 0
-}
-
-prepare_output() {
-  if [ -e "$1" ] || [ -L "$1" ]; then
-    [ -d "$1" ] && directory_is_empty "$1" || fail "$1 exists and is not an empty directory"
-  fi
-  mkdir -p "$1" || fail "cannot create $1"
-  OUT=$(CDPATH='' cd -- "$1" && pwd) || fail "cannot enter $1"
-}
-
-# PATH: copies one repository file to the same relative path under OUT.
-copy_file() {
-  [ -f "$1" ] || fail "missing shipped file $1"
-  target_dir=${1%/*}
-  [ "$target_dir" = "$1" ] || mkdir -p "$OUT/$target_dir" || fail "cannot create $OUT/$target_dir"
-  cp "$1" "$OUT/$1" || fail "cannot copy $1"
-}
-
-copy_directory() {
-  [ -d "$1" ] || fail "missing shipped directory $1"
-  cp -R "$1" "$OUT/$1" || fail "cannot copy $1"
-}
+. "$(script_directory)/lib/build-tree.sh"
 
 copy_shipped_files() {
   copy_file .claude-plugin/plugin.json

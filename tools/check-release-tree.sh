@@ -1,6 +1,8 @@
 #!/bin/sh
-# Guards for the release tree the Claude Directory validates (the shapes its scanner holds or
-# blocks on). Prints one `file:line: rule` per violation and exits 1 when there is any.
+# Guards for the full-edition release tree (tools/build-release.sh, the `release` branch): the
+# script shapes the Claude Directory validator cannot follow (its scanner holds or blocks on
+# them). The directory itself tracks the hookless edition (tools/build-directory.sh, branch
+# `claude-directory`). Prints one `file:line: rule` per violation and exits 1 when there is any.
 #
 # Usage:
 #   sh tools/check-release-tree.sh DIR                    every rule over a built release tree
