@@ -1,6 +1,6 @@
 {
   "name": "daguild",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Project-agnostic delegation crew of six agents (investigator, builder, architect, reviewer, security, scribe) with a per-project charter.",
   "author": {
     "name": "NatalJR",
