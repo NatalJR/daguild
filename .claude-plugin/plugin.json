@@ -1,13 +1,13 @@
 {
-  "name": "guild",
-  "version": "0.3.0",
-  "description": "Delegation guild: project-agnostic investigator/builder/architect/reviewer/security/scribe crew with a per-project charter.",
+  "name": "daguild",
+  "version": "0.4.0",
+  "description": "Project-agnostic delegation crew of six agents (investigator, builder, architect, reviewer, security, scribe) with a per-project charter.",
   "author": {
     "name": "NatalJR",
     "url": "https://github.com/NatalJR"
   },
-  "homepage": "https://github.com/NatalJR/guild",
-  "repository": "https://github.com/NatalJR/guild",
+  "homepage": "https://github.com/NatalJR/daguild",
+  "repository": "https://github.com/NatalJR/daguild",
   "keywords": [
     "delegation",
     "subagents",
@@ -21,7 +21,7 @@
     "git_handling": {
       "type": "boolean",
       "title": "Git handling",
-      "description": "Let the guild handle git through its generic git skill. Off: your project's own git conventions apply.",
+      "description": "Let daguild handle git through its generic git skill. Off: your project's own git conventions apply.",
       "default": false
     }
   }

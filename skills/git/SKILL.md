@@ -1,7 +1,7 @@
 ---
 name: git
 description: >
-  Generic git workflow of the guild: conventional commits, one commit per
+  Generic git workflow of daguild: conventional commits, one commit per
   logical change, no AI attribution, never push without an explicit request,
   linear PR flow. Invoke before any commit, push, branch, rebase or PR. Only
   active when the plugin's git handling option is on.

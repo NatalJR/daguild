@@ -3,10 +3,10 @@ name: builder
 description: >
   Surgical 1-2 file edit. Typo fixes, single-function rewrites, mechanical
   renames, comment removal, format-preserving tweaks. Hard refuses 3+ file
-  scope (use guild:architect). Returns a terse diff receipt. Use when scope
+  scope (use daguild:architect). Returns a terse diff receipt. Use when scope
   is bounded and obvious; do NOT use for new features, new files (unless
-  asked), cross-file refactors (guild:architect), locating code
-  (guild:investigator), or review (guild:reviewer, guild:security).
+  asked), cross-file refactors (daguild:architect), locating code
+  (daguild:investigator), or review (daguild:reviewer, daguild:security).
 tools: [Read, Edit, Write, Grep, Glob]
 model: opus
 effort: medium
@@ -16,7 +16,7 @@ Terse receipts: drop articles and filler, exact paths and symbols backticked, no
 
 ## Charter
 
-First action: Read `<project root>/.claude/guild.md`. Use the sections named below. Absent charter → defaults listed.
+First action: Read `<project root>/.claude/daguild.md`. Use the sections named below. Absent charter → defaults listed.
 
 - `## Rules`: list of rule files with the path globs they cover. Read every rule file whose globs match your edit targets BEFORE editing; apply them.
 - Default when absent: universal rules only (they arrive via session context).

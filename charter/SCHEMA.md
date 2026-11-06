@@ -1,6 +1,6 @@
 # Charter schema
 
-The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed order. Agents locate sections by heading text, so headings are verbatim and all present. An empty section states `none`.
+The charter is `<project>/.claude/daguild.md`. It has fixed H2 headings in a fixed order. Agents locate sections by heading text, so headings are verbatim and all present. An empty section states `none`.
 
 ## Identity
 
@@ -12,7 +12,7 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## Verify
 
 - Purpose: the exact commands that prove a change is sound.
-- Consumers: `guild:architect` (mandatory; absent means it replies `blocked. need: verify commands.`), the skill's close step.
+- Consumers: `daguild:architect` (mandatory; absent means it replies `blocked. need: verify commands.`), the skill's close step.
 - Required content: build, test, and lint commands with env vars and notes; which command is the lint gate.
 - Example lines:
   - `npm run build` - warnings are errors; this is also the lint gate.
@@ -21,7 +21,7 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## Areas
 
 - Purpose: the sharding map behind the "one area per slice; more than 12 files shards" rule.
-- Consumers: the skill (fan-out), `guild:investigator` (scoping), the cleanup pass (one auditor per area group).
+- Consumers: the skill (fan-out), `daguild:investigator` (scoping), the cleanup pass (one auditor per area group).
 - Required content: area name mapped to path globs.
 - Example lines:
   - `api` - `src/api/**`
@@ -31,7 +31,7 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## Rules
 
 - Purpose: index of the project's rule files.
-- Consumers: `guild:builder`, `guild:architect`, `guild:reviewer`.
+- Consumers: `daguild:builder`, `daguild:architect`, `daguild:reviewer`.
 - Required content: each `.claude/rules/*.md` file with the globs it covers. Agents Read the ones matching their edit or review targets.
 - Example lines:
   - `.claude/rules/api.md` - covers `src/api/**`
@@ -40,7 +40,7 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## Security
 
 - Purpose: project additions to the generic security checklist.
-- Consumers: `guild:security`.
+- Consumers: `daguild:security`.
 - Required content: named factories, path-resolution helpers, model and native file locations, dependency manifests.
 - Example lines:
   - Paths resolve only through `PathResolver.Resolve`; raw `Path.Combine` on user input is a defect.
@@ -49,7 +49,7 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## Docs
 
 - Purpose: the doc map and the exhaustive docs-sync surface list.
-- Consumers: `guild:scribe` (mandatory; absent means it replies `ambiguous. ask: doc map.`), the skill (docs-sync).
+- Consumers: `daguild:scribe` (mandatory; absent means it replies `ambiguous. ask: doc map.`), the skill (docs-sync).
 - Required content: normative docs, package-level docs, operator docs, external docs (outside the repo), and an enumeration of every docs-sync surface the close step walks. Each surface receives a hit or no-hit verdict.
 - Example lines:
   - Normative: `docs/ARCHITECTURE.md` (layers, invariants), `docs/API.md` (endpoint contracts).
@@ -60,14 +60,14 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## Process surfaces
 
 - Purpose: files only the main thread edits.
-- Consumers: `guild:scribe` (never touches them), the skill.
+- Consumers: `daguild:scribe` (never touches them), the skill.
 - Required content: root `CLAUDE.md`, rule files, the charter itself, ledger and next-steps files.
-- Example lines: `CLAUDE.md`, `.claude/rules/*`, `.claude/guild.md`, `NEXT-STEPS.md`.
+- Example lines: `CLAUDE.md`, `.claude/rules/*`, `.claude/daguild.md`, `NEXT-STEPS.md`.
 
 ## Forbidden for subagents
 
 - Purpose: operations agents never run.
-- Consumers: `guild:architect`, `guild:security`, the skill.
+- Consumers: `daguild:architect`, `daguild:security`, the skill.
 - Required content: training runs, database rewrites, deploys, pushes, driving an editor, or whatever applies to the project.
 - Example lines: `Deploys and pushes.` `Writes to the production database.` `Launching the GUI editor.`
 
@@ -81,7 +81,7 @@ The charter is `<project>/.claude/guild.md`. It has fixed H2 headings in a fixed
 ## QA
 
 - Purpose: human-in-the-loop constraints.
-- Consumers: the skill, `guild:architect`.
+- Consumers: the skill, `daguild:architect`.
 - Required content: what cannot be exercised from the agent environment, and how QA is handed to the owner: a numbered checklist, with the slice staying open until the owner confirms.
 - Example lines: `Visual rendering cannot be verified headless.` `Hand-off: numbered checklist in the receipt; slice stays open.`
 

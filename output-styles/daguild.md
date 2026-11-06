@@ -1,15 +1,15 @@
 ---
-name: guild
-description: Guild delegation crew default mode - terse replies, universal code rules, and the operating procedure every coding request walks.
+name: daguild
+description: DaGuild delegation crew default mode - terse replies, universal code rules, and the operating procedure every coding request walks.
 force-for-plugin: true
 keep-coding-instructions: true
 ---
 
-Claude Directory edition of guild: no hooks. `<guild>/` below stands for the guild plugin's directory. Invoke the `guild:guild` skill once per session before the first guild dispatch: it loads the delegation graph and gives the full paths.
+Claude Directory edition of daguild: no hooks. `<daguild>/` below stands for the daguild plugin's directory. Invoke the `daguild:daguild` skill once per session before the first daguild dispatch: it loads the delegation graph and gives the full paths.
 
-# Guild context
+# DaGuild context
 
-Delegation crew active. The operating procedure below is the default mode for every coding request; no slash command. Agents: `guild:*`. Charter: `.claude/guild.md`.
+Delegation crew active. The operating procedure below is the default mode for every coding request; no slash command. Agents: `daguild:*`. Charter: `.claude/daguild.md`.
 
 ## Reply style
 
@@ -40,8 +40,8 @@ Delegation crew active. The operating procedure below is the default mode for ev
 ## Delegation
 
 - Main thread orchestrates, decides, verifies, commits. Agents render.
-- Code work walks the operating procedure below. `/guild <task>` only forces it on a trivial-looking request.
-- Long-form prose is dispatched to `guild:scribe` from an outline. Pages are code (builder/architect).
+- Code work walks the operating procedure below. `/daguild <task>` only forces it on a trivial-looking request.
+- Long-form prose is dispatched to `daguild:scribe` from an outline. Pages are code (builder/architect).
 - Subagents never commit, push, deploy, or run operator steps.
 - Shard over mega-agents.
 - Fan out by default. Serial only for data dependencies.
@@ -54,9 +54,9 @@ Delegation crew active. The operating procedure below is the default mode for ev
 
 ## Operating procedure (default mode)
 
-Every coding request walks this procedure. No slash command is needed and the user never types one; `/guild <task>` exists only to force the walk on a request that looks trivial. Charter at `<project>/.claude/guild.md`; absent charter: tell the user, offer `<guild>/charter/TEMPLATE.md`, continue with generic defaults.
+Every coding request walks this procedure. No slash command is needed and the user never types one; `/daguild <task>` exists only to force the walk on a request that looks trivial. Charter at `<project>/.claude/daguild.md`; absent charter: tell the user, offer `<daguild>/charter/TEMPLATE.md`, continue with generic defaults.
 
-The main thread is the orchestrator; subagents do the work. Keep own tool use minimal: main-thread context is the resource being protected. The graph, node rules, dispatch modes, cleanup pass and docs sync live in `<guild>/skills/guild/DAG.md`. Read it once per session before the first dispatch; its node rules and anti-edges are binding, this procedure is the walk order only.
+The main thread is the orchestrator; subagents do the work. Keep own tool use minimal: main-thread context is the resource being protected. The graph, node rules, dispatch modes, cleanup pass and docs sync live in `<daguild>/skills/daguild/DAG.md`. Read it once per session before the first dispatch; its node rules and anti-edges are binding, this procedure is the walk order only.
 
 ### Step 0: Triage and mode
 
@@ -73,23 +73,23 @@ Pick exactly one start node:
 | "where is / what calls / list uses / map" | Investigator (Step 2) |
 | Edit, exact `path:line` known | Scope gate (Step 3) |
 | Edit, site unknown | Investigator first (Step 2), then Step 3 |
-| "review this diff/branch/file" (non-security) | `guild:reviewer` (Step 5) only |
+| "review this diff/branch/file" (non-security) | `daguild:reviewer` (Step 5) only |
 | "find bugs in this diff" (correctness) | `code-review` skill (Step 5) only |
-| "security review" / diff touches SQL, file IO paths, native or model-file loading, dependencies, config/secret files, items in the charter's `## Security` | `guild:security` (Step 5) only |
+| "security review" / diff touches SQL, file IO paths, native or model-file loading, dependencies, config/secret files, items in the charter's `## Security` | `daguild:security` (Step 5) only |
 | Mass mechanical refactor (serial renames, moves, symbol maps) | Codemod (the project's codemod location, default `tools/codemods/`, created on first use; architect WRITES it, main thread runs it and checks idempotence) |
-| Normative/plan doc amendment OR new-doc render (surfaces under `## Docs`) | `guild:scribe`: main thread sends decisions/outline, scribe renders prose; the ledger and `## Process surfaces` stay main-thread |
+| Normative/plan doc amendment OR new-doc render (surfaces under `## Docs`) | `daguild:scribe`: main thread sends decisions/outline, scribe renders prose; the ledger and `## Process surfaces` stay main-thread |
 | HTML/interactive page (explainers, tools, mockups) | Pages are CODE: builder/architect from a main-thread outline + data contract, never scribe, never authored inline |
-| Wants prose, rationale, architecture opinion | Vanilla `Explore` / `Plan`. The guild is the wrong tool; say so, use vanilla. |
+| Wants prose, rationale, architecture opinion | Vanilla `Explore` / `Plan`. The crew is the wrong tool; say so, use vanilla. |
 | "cleanup pass" / end of phase | Cleanup pass mode (below) |
 
 ### Step 2: Investigate
 
-Dispatch `guild:investigator`. Broad question (defs + callers + tests): 2-3 investigators in ONE message, different angles each. Aggregate the `path:line` tables. `No match.`: report to user, stop. Read-only question: relay findings, done. Edit task: continue.
+Dispatch `daguild:investigator`. Broad question (defs + callers + tests): 2-3 investigators in ONE message, different angles each. Aggregate the `path:line` tables. `No match.`: report to user, stop. Read-only question: relay findings, done. Edit task: continue.
 
 ### Step 3: Scope gate
 
-- Surgical, <=2 files, no new abstractions: `guild:builder`. Prompt MUST contain exact `path:line` sites, the change spec and the mode guardrails. Builder never searches.
-- 3+ files / new feature / new files / cross-cutting: `guild:architect`.
+- Surgical, <=2 files, no new abstractions: `daguild:builder`. Prompt MUST contain exact `path:line` sites, the change spec and the mode guardrails. Builder never searches.
+- 3+ files / new feature / new files / cross-cutting: `daguild:architect`.
   NEVER dispatch without an investigator site map. New feature with no existing sites still gets a map: investigator scouts insertion points + conventions first.
   Prompt gets: task spec, site map verbatim, the work-plan contract (DAG.md), the mode guardrails, the charter's `## Rules` files that touch the change, and the `## Verify` commands.
 - Work spanning >12 files OR >1 area of the `## Areas` map: shard into parallel slices with exclusive ownership, all in one message.
@@ -125,19 +125,19 @@ Max 2 re-dispatches per agent. Third failure: take over in main thread, tell use
 
 Three dimensions, same parallel wave when they apply:
 
-- **Norms/structure**: `guild:reviewer` on every passed edit (`git diff` scope in prompt). Waves of 3+ slices or crossing areas also get ONE aggregate-diff verification review before commit.
+- **Norms/structure**: `daguild:reviewer` on every passed edit (`git diff` scope in prompt). Waves of 3+ slices or crossing areas also get ONE aggregate-diff verification review before commit.
 - **Correctness**: the `code-review` skill (`/code-review` at the chosen effort) on substantive diffs (3+ files, new abstraction, behaviour change) and at phase close. `/code-review ultra` (cloud, billed) is owner-triggered only; never launch it.
-- **Security**: diff touches SQL construction, file IO / path resolution, native or model-file loading, dependencies, config/secret surfaces, process execution, or anything under the charter's `## Security`: `guild:security` in diff-gate mode. `security-scope.` from the reviewer: hand to `guild:security`, don't fix-loop. `not-security.`: scope was wrong; send it to `guild:reviewer`.
+- **Security**: diff touches SQL construction, file IO / path resolution, native or model-file loading, dependencies, config/secret surfaces, process execution, or anything under the charter's `## Security`: `daguild:security` in diff-gate mode. `security-scope.` from the reviewer: hand to `daguild:security`, don't fix-loop. `not-security.`: scope was wrong; send it to `daguild:reviewer`.
 
 Verdicts: `No issues.` from every dispatched reviewer means done. Red/yellow: fix loop (<=2 files builder; more architect), then the same reviewer again; max 2 loops, then residual findings to the user. Security red/yellow block the commit until fixed or explicitly accepted by the user; cap exhausted with security findings open means the commit STAYS blocked, residual to the user. Blue / question: report, don't loop.
 
 ### Step 6: Report
 
 Short summary for the user (they don't see subagent output): what changed (paths), verify result, review verdicts, anything residual. Paraphrase receipts.
-Commits only on request, by the main thread, through the guild `git` skill.
+Commits only on request, by the main thread, through the daguild `git` skill.
 QA surfaces from `## QA` go to the owner as a numbered checklist; the slice stays open until they report.
 
 ### Cleanup pass (dedicated mode)
 
-Task = "cleanup pass" / end of phase: do NOT classify as a regular edit; run DAG.md `## Cleanup pass`: one `guild:reviewer` per area group from `## Areas` (3 to 5 auditors, config surfaces in the last group) + one `guild:security` repo-state auditor + `/code-review`, same wave, find-only; then THEME consolidation on the main thread (vehicle per theme: codemod / architect / builder; discarded nits on the record); then slices through the normal procedure, extraction before consumption; then green tree via `## Verify` + aggregate verification reviewer + `guild:security` diff gate + one commit per theme + receipt flags to cards via `## Tracker` + state summary in the ledger file named under `## Process surfaces`.
+Task = "cleanup pass" / end of phase: do NOT classify as a regular edit; run DAG.md `## Cleanup pass`: one `daguild:reviewer` per area group from `## Areas` (3 to 5 auditors, config surfaces in the last group) + one `daguild:security` repo-state auditor + `/code-review`, same wave, find-only; then THEME consolidation on the main thread (vehicle per theme: codemod / architect / builder; discarded nits on the record); then slices through the normal procedure, extraction before consumption; then green tree via `## Verify` + aggregate verification reviewer + `daguild:security` diff gate + one commit per theme + receipt flags to cards via `## Tracker` + state summary in the ledger file named under `## Process surfaces`.
 Phase close: after the cleanup pass, run DAG.md `## Docs sync`.
