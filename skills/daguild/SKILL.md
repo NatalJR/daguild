@@ -1,12 +1,12 @@
 ---
-name: guild
+name: daguild
 description: >
-  Force the guild delegation walk on a task that looks trivial. The walk itself
-  (classify, dispatch to guild:investigator / guild:builder / guild:architect /
-  guild:reviewer / guild:security / guild:scribe, terminal tokens, review loop)
+  Force the daguild delegation walk on a task that looks trivial. The walk itself
+  (classify, dispatch to daguild:investigator / daguild:builder / daguild:architect /
+  daguild:reviewer / daguild:security / daguild:scribe, terminal tokens, review loop)
   is the session's default operating procedure, injected at session start, so
   ordinary coding requests never need this skill. Use only when the user types
-  /guild explicitly.
+  /daguild explicitly.
 argument-hint: <task to force through the DAG>
 ---
 

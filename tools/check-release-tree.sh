@@ -63,7 +63,7 @@
 # Dependencies: sh, awk, find.
 set -u
 
-REPOSITORY_LINK='github.com/NatalJR/guild'
+REPOSITORY_LINK='github.com/NatalJR/daguild'
 
 # FILE... (stdin when none): a `"` inside a `${ }` that is itself inside a double-quoted string.
 # Quote state resets per line; comment lines and trailing comments are skipped.

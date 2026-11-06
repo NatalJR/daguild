@@ -1,13 +1,13 @@
 # UserPromptSubmit hook, PowerShell twin of prompt-reinforce.sh (the primary implementation;
 # the harness runs this one only where no Git Bash is found): per-turn reinforcement of the
-# guild context, since style drifts in long sessions. The harness injects stdout as context.
+# daguild context, since style drifts in long sessions. The harness injects stdout as context.
 # Switch: hooks.prompt_reinforce. Any internal error prints nothing and exits 0 (never blocks a
 # prompt).
 # Windows PowerShell 5.1 compatible syntax.
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = 'Stop'
 
-$REINFORCEMENT = 'GUILD DEFAULT MODE: replies at most six lines, universal code rules, coding requests walk the operating procedure in session context, no slash command.'
+$REINFORCEMENT = 'DAGUILD DEFAULT MODE: replies at most six lines, universal code rules, coding requests walk the operating procedure in session context, no slash command.'
 
 # ROOT: true when ROOT is non-empty and its hooks directory exists; like its sh twin, the hook
 # does nothing otherwise.
@@ -20,8 +20,8 @@ try {
     if (-not (Test-PluginRootPresent $pluginRoot)) { exit 0 }
     . ($pluginRoot + '/hooks/lib/config.ps1')
     . ($pluginRoot + '/hooks/lib/payload.ps1')
-    Import-GuildConfig
-    if (Get-GuildSwitch 'hooks.prompt_reinforce') { Write-HookOutput ($REINFORCEMENT + "`n") }
+    Import-DaGuildConfig
+    if (Get-DaGuildSwitch 'hooks.prompt_reinforce') { Write-HookOutput ($REINFORCEMENT + "`n") }
 } catch {
     exit 0
 }

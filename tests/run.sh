@@ -11,7 +11,7 @@
 # that exercise a twin are written in both runners.
 # Fixtures under tests/fixtures/** contain emoji bytes on purpose (emoji-scan cases); the
 # repository no-emoji rule exempts that directory. Cases needing a switch override write a
-# temporary guild.conf into a scratch HOME or project directory (never into the fixtures) or
+# temporary daguild.conf into a scratch HOME or project directory (never into the fixtures) or
 # export CLAUDE_PLUGIN_OPTION_GIT_HANDLING; reset_env clears both. render-agents cases run
 # against a scratch copy of agents/ (CLAUDE_PLUGIN_ROOT pointed at it), never the repository's
 # files; reset_env also clears every CLAUDE_PLUGIN_OPTION_<AGENT>_MODEL / _EFFORT. The hooks
@@ -239,12 +239,12 @@ run_case() {
 apply_case_setup() {
   if [ -n "$CASE_USER_CONF" ]; then
     case_scratch_dir user
-    printf '%s' "$CASE_USER_CONF" >"$CASE_DIR/.claude/guild.conf"
+    printf '%s' "$CASE_USER_CONF" >"$CASE_DIR/.claude/daguild.conf"
     HOME=$CASE_DIR
   fi
   if [ -n "$CASE_PROJECT_CONF" ]; then
     case_scratch_dir project
-    printf '%s' "$CASE_PROJECT_CONF" >"$CASE_DIR/.claude/guild.conf"
+    printf '%s' "$CASE_PROJECT_CONF" >"$CASE_DIR/.claude/daguild.conf"
     cp "$FIXTURE_PROJECT/emoji.md" "$CASE_DIR/emoji.md"
     CLAUDE_PROJECT_DIR=$CASE_DIR
   fi
@@ -343,17 +343,17 @@ new_scratch_dir() {
   mkdir -p "$SCRATCH_DIR/.claude"
 }
 
-# CONTENT: points HOME at a scratch directory whose ~/.claude/guild.conf holds CONTENT.
+# CONTENT: points HOME at a scratch directory whose ~/.claude/daguild.conf holds CONTENT.
 use_user_conf() {
   new_scratch_dir
-  printf '%s\n' "$1" >"$SCRATCH_DIR/.claude/guild.conf"
+  printf '%s\n' "$1" >"$SCRATCH_DIR/.claude/daguild.conf"
   HOME=$SCRATCH_DIR
 }
 
-# CONTENT: points CLAUDE_PROJECT_DIR at a scratch project with CONTENT as its guild.conf.
+# CONTENT: points CLAUDE_PROJECT_DIR at a scratch project with CONTENT as its daguild.conf.
 use_project_conf() {
   new_scratch_dir
-  printf '%s\n' "$1" >"$SCRATCH_DIR/.claude/guild.conf"
+  printf '%s\n' "$1" >"$SCRATCH_DIR/.claude/daguild.conf"
   cp "$FIXTURE_PROJECT/emoji.md" "$SCRATCH_DIR/emoji.md"
   CLAUDE_PROJECT_DIR=$SCRATCH_DIR
 }
@@ -446,17 +446,17 @@ first_line_of() {
 config_query() {
   (
     . "$REPO_ROOT/hooks/lib/config.sh"
-    guild_config_load
+    daguild_config_load
     "$@"
   )
 }
 
 switch_state() {
-  if config_query guild_switch "$1"; then printf 'on'; else printf 'off'; fi
+  if config_query daguild_switch "$1"; then printf 'on'; else printf 'off'; fi
 }
 
 count_on_switches() {
-  printf '%s\n' "$GUILD_SWITCHES" | grep -c '=on$'
+  printf '%s\n' "$DAGUILD_SWITCHES" | grep -c '=on$'
 }
 
 # ---------------------------------------------------------------- payload library
@@ -615,18 +615,18 @@ while [ "$large_round" -lt 12 ]; do
   large_round=$((large_round + 1))
 done
 describe 'receipt-check: large message with a token allowed'
-expect_exit receipt-check.sh 0 "$(receipt_payload guild:builder "$large_message")"
+expect_exit receipt-check.sh 0 "$(receipt_payload daguild:builder "$large_message")"
 describe 'receipt-check: large message without a token blocked'
-expect_exit receipt-check.sh 2 "$(receipt_payload guild:builder "prose first\n$large_message")" 'Receipt contract'
+expect_exit receipt-check.sh 2 "$(receipt_payload daguild:builder "prose first\n$large_message")" 'Receipt contract'
 
 # ---------------------------------------------------------------- config
 
-describe 'config: fixture project carries no guild.conf'
-expect_equal 'absent' "$([ -e "$FIXTURE_PROJECT/.claude/guild.conf" ] && printf present || printf absent)"
+describe 'config: fixture project carries no daguild.conf'
+expect_equal 'absent' "$([ -e "$FIXTURE_PROJECT/.claude/daguild.conf" ] && printf present || printf absent)"
 describe 'config: defaults declare fourteen keys, all on'
 expect_equal '14' "$(config_query count_on_switches)"
 describe 'config: shipped defaults report no changed keys'
-expect_equal '' "$(config_query guild_changed_switches)"
+expect_equal '' "$(config_query daguild_changed_switches)"
 describe 'config: git.handling reads as off by default'
 expect_equal 'off' "$(switch_state git.handling)"
 describe 'config: user conf turns a switch off'
@@ -638,7 +638,7 @@ expect_equal 'on' "$(switch_state hooks.emoji_scan)"
 reset_env
 describe 'config: unknown key ignored'
 use_user_conf 'hooks.not_a_switch = off'
-expect_equal '' "$(config_query guild_changed_switches)"
+expect_equal '' "$(config_query daguild_changed_switches)"
 describe 'config: unknown key reads as on'
 expect_equal 'on' "$(switch_state hooks.not_a_switch)"
 reset_env
@@ -650,30 +650,30 @@ review.security = off # trailing comment
 =off
   # docs.sync = off
 review.norms=No"
-expect_equal 'review.norms=off' "$(config_query guild_changed_switches)"
+expect_equal 'review.norms=off' "$(config_query daguild_changed_switches)"
 reset_env
 describe 'config: values are case-insensitive'
 use_user_conf "review.security = OFF
 docs.sync = False
 style.terse = YES"
-expect_equal 'docs.sync=off review.security=off' "$(config_query guild_changed_switches)"
+expect_equal 'docs.sync=off review.security=off' "$(config_query daguild_changed_switches)"
 reset_env
 describe 'config: CRLF line endings'
 new_scratch_dir
-printf 'review.security = off\r\nhooks.emoji_scan = off\r\n' >"$SCRATCH_DIR/.claude/guild.conf"
+printf 'review.security = off\r\nhooks.emoji_scan = off\r\n' >"$SCRATCH_DIR/.claude/daguild.conf"
 HOME=$SCRATCH_DIR
-expect_equal 'hooks.emoji_scan=off review.security=off' "$(config_query guild_changed_switches)"
+expect_equal 'hooks.emoji_scan=off review.security=off' "$(config_query daguild_changed_switches)"
 reset_env
-describe 'config: guild_changed_switches sorted and space separated'
+describe 'config: daguild_changed_switches sorted and space separated'
 use_user_conf "style.terse = off
 docs.sync = off
 hooks.receipt_check = off"
-expect_equal 'docs.sync=off hooks.receipt_check=off style.terse=off' "$(config_query guild_changed_switches)"
+expect_equal 'docs.sync=off hooks.receipt_check=off style.terse=off' "$(config_query daguild_changed_switches)"
 reset_env
 describe 'config: a key set to its shipped default is not reported as changed'
 use_user_conf "docs.sync = on
 review.security = on"
-expect_equal '' "$(config_query guild_changed_switches)"
+expect_equal '' "$(config_query daguild_changed_switches)"
 reset_env
 describe 'config: missing defaults file never disables anything'
 new_scratch_dir
@@ -683,18 +683,18 @@ expect_equal 'on' "$(switch_state review.security)"
 describe 'config: missing defaults file keeps git.handling off'
 expect_equal 'off' "$(switch_state git.handling)"
 describe 'config: missing defaults file reports no changed keys'
-expect_equal '' "$(config_query guild_changed_switches)"
+expect_equal '' "$(config_query daguild_changed_switches)"
 describe 'config: missing defaults file, plugin option true turns git.handling on'
 CLAUDE_PLUGIN_OPTION_GIT_HANDLING=true
 export CLAUDE_PLUGIN_OPTION_GIT_HANDLING
 expect_equal 'on' "$(switch_state git.handling)"
 describe 'config: missing defaults file, plugin option true reports git.handling=on'
-expect_equal 'git.handling=on' "$(config_query guild_changed_switches)"
+expect_equal 'git.handling=on' "$(config_query daguild_changed_switches)"
 reset_env
 describe 'config: unset CLAUDE_PLUGIN_ROOT reads no defaults file'
 use_user_conf 'review.security = off'
 unset CLAUDE_PLUGIN_ROOT
-expect_equal '' "$(config_query guild_changed_switches)"
+expect_equal '' "$(config_query daguild_changed_switches)"
 reset_env
 
 # VALUE WANT: git.handling state with the plugin option set to VALUE and no conf file.
@@ -718,7 +718,7 @@ describe 'config: git.handling on in the project conf is ignored'
 use_project_conf 'git.handling = on'
 expect_equal 'off' "$(switch_state git.handling)"
 describe 'config: git.handling in the project conf reports no changed keys'
-expect_equal '' "$(config_query guild_changed_switches)"
+expect_equal '' "$(config_query daguild_changed_switches)"
 describe 'config: plugin option false leaves git.handling off'
 CLAUDE_PLUGIN_OPTION_GIT_HANDLING=false
 export CLAUDE_PLUGIN_OPTION_GIT_HANDLING
@@ -730,7 +730,7 @@ CLAUDE_PLUGIN_OPTION_GIT_HANDLING=true
 export CLAUDE_PLUGIN_OPTION_GIT_HANDLING
 expect_equal 'on' "$(switch_state git.handling)"
 describe 'config: plugin option sets git.handling only'
-expect_equal 'git.handling=on' "$(config_query guild_changed_switches)"
+expect_equal 'git.handling=on' "$(config_query daguild_changed_switches)"
 reset_env
 describe 'config: git.handling declared in the defaults file is ignored'
 new_scratch_dir
@@ -752,7 +752,7 @@ reset_env
 if [ -n "$WINDOWS_ROOT_BACKSLASH" ]; then
   describe 'session-context: backslash plugin root rendered with forward slashes (Git Bash only)'
   CLAUDE_PLUGIN_ROOT=$WINDOWS_ROOT_BACKSLASH
-  expect_stdout_contains "$WINDOWS_ROOT_FORWARD/skills/guild/DAG.md" session-context.sh context/procedure.md
+  expect_stdout_contains "$WINDOWS_ROOT_FORWARD/skills/daguild/DAG.md" session-context.sh context/procedure.md
   reset_env
 fi
 
@@ -830,7 +830,7 @@ export CLAUDE_PLUGIN_OPTION_BUILDER_MODEL CLAUDE_PLUGIN_OPTION_REVIEWER_MODEL
 run_context render-agents.sh
 expect_equal "reviewer.md - model: opus${NL}reviewer.md + model: sonnet" "$(agents_changes)"
 describe 'render-agents: the notice lists only the agents rendered'
-expect_equal 'GUILD AGENTS RENDERED: reviewer model=sonnet effort=high. Run the reload-plugins command to apply.' "$RUN_STDOUT"
+expect_equal 'DAGUILD AGENTS RENDERED: reviewer model=sonnet effort=high. Run the reload-plugins command to apply.' "$RUN_STDOUT"
 reset_env
 
 describe 'render-agents: invalid values leave every agent file untouched'
@@ -1008,7 +1008,7 @@ expect_edition_lacks() {
 # Prints the frontmatter lines of the edition's output style.
 output_style_frontmatter() {
   awk 'NR == 1 && /^---$/ { inside = 1; next } inside && /^---$/ { exit } inside { print }' \
-    "$EDITION_TREE/output-styles/guild.md"
+    "$EDITION_TREE/output-styles/daguild.md"
 }
 
 # LINE: the output style frontmatter holds LINE.
@@ -1023,30 +1023,30 @@ check_edition_layout() {
   expect_equal '' "$(for shipped_dir in hooks config context workflows; do [ ! -e "$EDITION_TREE/$shipped_dir" ] || printf '%s ' "$shipped_dir"; done)"
   describe 'directory edition: agents/ holds six files'
   expect_equal '6' "$(($(find "$EDITION_TREE/agents" -type f | wc -l)))"
-  expect_edition_text 'guild skill names the DAG through the plugin root' skills/guild/SKILL.md \
-    '${CLAUDE_PLUGIN_ROOT}/skills/guild/DAG.md'
+  expect_edition_text 'daguild skill names the DAG through the plugin root' skills/daguild/SKILL.md \
+    '${CLAUDE_PLUGIN_ROOT}/skills/daguild/DAG.md'
 }
 
 check_edition_output_style() {
   expect_frontmatter_line 'force-for-plugin: true'
   expect_frontmatter_line 'keep-coding-instructions: true'
-  expect_edition_text 'output style carries the procedure' output-styles/guild.md '## Operating procedure (default mode)'
-  expect_edition_text 'output style carries the reply style' output-styles/guild.md '## Reply style'
-  expect_edition_lacks 'output style keeps no {{ marker' output-styles/guild.md '{{'
-  expect_edition_lacks 'output style names no absolute plugin root' output-styles/guild.md "$REPO_ROOT/"
+  expect_edition_text 'output style carries the procedure' output-styles/daguild.md '## Operating procedure (default mode)'
+  expect_edition_text 'output style carries the reply style' output-styles/daguild.md '## Reply style'
+  expect_edition_lacks 'output style keeps no {{ marker' output-styles/daguild.md '{{'
+  expect_edition_lacks 'output style names no absolute plugin root' output-styles/daguild.md "$REPO_ROOT/"
   [ -z "$WINDOWS_ROOT_FORWARD" ] ||
-    expect_edition_lacks 'output style names no Windows plugin root' output-styles/guild.md "$WINDOWS_ROOT_FORWARD/"
-  expect_edition_text 'output style commits through the guild git skill' output-styles/guild.md \
-    'through the guild `git` skill'
-  expect_edition_lacks 'output style does not point at the project git skill' output-styles/guild.md \
+    expect_edition_lacks 'output style names no Windows plugin root' output-styles/daguild.md "$WINDOWS_ROOT_FORWARD/"
+  expect_edition_text 'output style commits through the daguild git skill' output-styles/daguild.md \
+    'through the daguild `git` skill'
+  expect_edition_lacks 'output style does not point at the project git skill' output-styles/daguild.md \
     "the project's git skill named under"
-  expect_edition_lacks 'output style lists no changed switches' output-styles/guild.md '## Guild switches changed'
+  expect_edition_lacks 'output style lists no changed switches' output-styles/daguild.md '## DaGuild switches changed'
 }
 
 check_edition_text_edits() {
-  expect_edition_lacks 'DAG.md does not name context/procedure.md' skills/guild/DAG.md 'context/procedure.md'
-  expect_edition_lacks 'DAG.md does not name the plugin options' skills/guild/DAG.md 'plugin options'
-  expect_edition_lacks 'DAG.md does not mention workflow scripts' skills/guild/DAG.md 'Workflow scripts follow'
+  expect_edition_lacks 'DAG.md does not name context/procedure.md' skills/daguild/DAG.md 'context/procedure.md'
+  expect_edition_lacks 'DAG.md does not name the plugin options' skills/daguild/DAG.md 'plugin options'
+  expect_edition_lacks 'DAG.md does not mention workflow scripts' skills/daguild/DAG.md 'Workflow scripts follow'
   expect_edition_lacks 'plugin.json does not mention a guard hook' .claude-plugin/plugin.json 'guard hook'
 }
 

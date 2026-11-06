@@ -46,7 +46,7 @@ $PowerShellPath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.F
 $Utf8 = New-Object System.Text.UTF8Encoding -ArgumentList $false, $false
 $NL = [string][char]10
 $IsWindowsHost = [System.IO.Path]::DirectorySeparatorChar -eq [char]'\'
-$Scratch = Join-Path ([System.IO.Path]::GetTempPath()) ('guild-tests-' + [guid]::NewGuid().ToString('N'))
+$Scratch = Join-Path ([System.IO.Path]::GetTempPath()) ('daguild-tests-' + [guid]::NewGuid().ToString('N'))
 $Passed = 0
 $Failed = 0
 $CaseName = ''
@@ -212,7 +212,7 @@ function Read-CaseFile([string]$Path) {
     $records = New-Object System.Collections.Generic.List[object]
     $record = $null
     foreach ($rawLine in $Utf8.GetString([System.IO.File]::ReadAllBytes($Path)).Split([char]10)) {
-        $line = Remove-GuildCarriageReturn $rawLine
+        $line = Remove-DaGuildCarriageReturn $rawLine
         if ($line -eq '') {
             if ($null -ne $record) { $records.Add($record) }
             $record = $null
@@ -332,20 +332,20 @@ function New-ScratchDirectory {
     return $directory
 }
 
-# DIRECTORY LINES: writes DIRECTORY/.claude/guild.conf, one LF-terminated line each.
+# DIRECTORY LINES: writes DIRECTORY/.claude/daguild.conf, one LF-terminated line each.
 function Write-ConfFile([string]$Directory, [string[]]$Lines) {
     $text = ($Lines -join $NL) + $NL
-    [System.IO.File]::WriteAllBytes((Join-Path $Directory '.claude/guild.conf'), $Utf8.GetBytes($text))
+    [System.IO.File]::WriteAllBytes((Join-Path $Directory '.claude/daguild.conf'), $Utf8.GetBytes($text))
 }
 
-# CONTENT: points HOME at a scratch directory whose ~/.claude/guild.conf holds CONTENT.
+# CONTENT: points HOME at a scratch directory whose ~/.claude/daguild.conf holds CONTENT.
 function Use-UserConf([string]$Content) {
     $directory = New-ScratchDirectory
     Write-ConfFile $directory @($Content)
     $env:HOME = $directory
 }
 
-# CONTENT: points CLAUDE_PROJECT_DIR at a scratch project with CONTENT as its guild.conf.
+# CONTENT: points CLAUDE_PROJECT_DIR at a scratch project with CONTENT as its daguild.conf.
 function Use-ProjectConf([string]$Content) {
     $directory = New-ScratchDirectory
     Write-ConfFile $directory @($Content)
@@ -448,27 +448,27 @@ function Get-BoolOf([string]$Payload, [string]$Name) {
 }
 
 function Get-SwitchState([string]$Key) {
-    Import-GuildConfig
-    if (Get-GuildSwitch $Key) { return 'on' }
+    Import-DaGuildConfig
+    if (Get-DaGuildSwitch $Key) { return 'on' }
     return 'off'
 }
 
 function Get-ChangedKeys {
-    Import-GuildConfig
-    return Get-GuildChangedSwitches
+    Import-DaGuildConfig
+    return Get-DaGuildChangedSwitches
 }
 
 function Get-OnSwitchCount {
-    Import-GuildConfig
+    Import-DaGuildConfig
     $count = 0
-    foreach ($value in $GUILD_SWITCHES.Values) { if ($value -ceq 'on') { $count++ } }
+    foreach ($value in $DAGUILD_SWITCHES.Values) { if ($value -ceq 'on') { $count++ } }
     return [string]$count
 }
 
 # FROM TO [SKIP]: the defaults.conf lines ending in `= FROM`, rewritten to `= TO`,
 # skipping lines that match SKIP (sed -n -e '/SKIP/d' -e 's/= FROM$/= TO/p').
 function Get-RewrittenDefaults([string]$From, [string]$To, [string]$Skip = '') {
-    $lines = foreach ($line in (Split-GuildLines ($Utf8.GetString([System.IO.File]::ReadAllBytes((Join-Path $RepoRoot 'config/defaults.conf')))))) {
+    $lines = foreach ($line in (Split-DaGuildLines ($Utf8.GetString([System.IO.File]::ReadAllBytes((Join-Path $RepoRoot 'config/defaults.conf')))))) {
         if ($Skip -ne '' -and $line -cmatch $Skip) { continue }
         if ($line -cmatch ('= ' + $From + '$')) { $line -creplace ('= ' + $From + '$'), ('= ' + $To) }
     }
@@ -620,15 +620,15 @@ try {
     $largeMessage = 'plan: 2 files\n'
     for ($round = 0; $round -lt 12; $round++) { $largeMessage = $largeMessage + $largeMessage }
     Set-Case 'receipt-check: large message with a token allowed'
-    Assert-Exit 'receipt-check' 0 (New-ReceiptPayload 'guild:builder' $largeMessage)
+    Assert-Exit 'receipt-check' 0 (New-ReceiptPayload 'daguild:builder' $largeMessage)
     Set-Case 'receipt-check: large message without a token blocked'
-    Assert-Exit 'receipt-check' 2 (New-ReceiptPayload 'guild:builder' ('prose first\n' + $largeMessage)) 'Receipt contract'
+    Assert-Exit 'receipt-check' 2 (New-ReceiptPayload 'daguild:builder' ('prose first\n' + $largeMessage)) 'Receipt contract'
 
     # ------------------------------------------------------------ config
 
-    Set-Case 'config: fixture project carries no guild.conf'
+    Set-Case 'config: fixture project carries no daguild.conf'
     $fixtureConf = 'absent'
-    if (Test-Path -LiteralPath (Join-Path $FixtureProject '.claude/guild.conf')) { $fixtureConf = 'present' }
+    if (Test-Path -LiteralPath (Join-Path $FixtureProject '.claude/daguild.conf')) { $fixtureConf = 'present' }
     Assert-Equal 'absent' $fixtureConf
     Set-Case 'config: defaults declare fourteen keys, all on'
     Assert-Equal '14' (Get-OnSwitchCount)
@@ -659,11 +659,11 @@ try {
     Reset-Environment
     Set-Case 'config: CRLF line endings'
     $directory = New-ScratchDirectory
-    [System.IO.File]::WriteAllBytes((Join-Path $directory '.claude/guild.conf'), $Utf8.GetBytes('review.security = off' + [char]13 + $NL + 'hooks.emoji_scan = off' + [char]13 + $NL))
+    [System.IO.File]::WriteAllBytes((Join-Path $directory '.claude/daguild.conf'), $Utf8.GetBytes('review.security = off' + [char]13 + $NL + 'hooks.emoji_scan = off' + [char]13 + $NL))
     $env:HOME = $directory
     Assert-Equal 'hooks.emoji_scan=off review.security=off' (Get-ChangedKeys)
     Reset-Environment
-    Set-Case 'config: guild_changed_keys sorted and space separated'
+    Set-Case 'config: daguild_changed_keys sorted and space separated'
     Use-UserConf (@('style.terse = off', 'docs.sync = off', 'hooks.receipt_check = off') -join $NL)
     Assert-Equal 'docs.sync=off hooks.receipt_check=off style.terse=off' (Get-ChangedKeys)
     Reset-Environment
@@ -733,7 +733,7 @@ try {
     if ($IsWindowsHost) {
         Set-Case 'session-context: backslash plugin root rendered with forward slashes (Windows only)'
         $env:CLAUDE_PLUGIN_ROOT = $RepoRoot.Replace('/', '\')
-        Assert-StdoutContains ((ConvertTo-ForwardSlash $RepoRoot) + '/skills/guild/DAG.md') 'session-context' @('context/procedure.md')
+        Assert-StdoutContains ((ConvertTo-ForwardSlash $RepoRoot) + '/skills/daguild/DAG.md') 'session-context' @('context/procedure.md')
         Reset-Environment
     }
     Set-Case 'session-context: every switch on leaves no marker lines in the procedure'
@@ -797,7 +797,7 @@ try {
     $notice = (Invoke-Hook 'render-agents' '').Stdout
     Assert-Equal ('reviewer.md - model: opus' + $NL + 'reviewer.md + model: sonnet') (Get-AgentsChanges $agentsRoot)
     Set-Case 'render-agents: the notice lists only the agents rendered'
-    Assert-Equal 'GUILD AGENTS RENDERED: reviewer model=sonnet effort=high. Run the reload-plugins command to apply.' $notice
+    Assert-Equal 'DAGUILD AGENTS RENDERED: reviewer model=sonnet effort=high. Run the reload-plugins command to apply.' $notice
     Reset-Environment
 
     Set-Case 'render-agents: invalid values leave every agent file untouched'

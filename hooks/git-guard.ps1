@@ -1,5 +1,5 @@
 # PreToolUse hook (Bash|PowerShell), PowerShell twin of git-guard.sh (the primary
-# implementation; the harness runs this one only where no Git Bash is found): the guild git
+# implementation; the harness runs this one only where no Git Bash is found): the daguild git
 # guard. Denies, in the command text, AI attribution in a git commit or a PR create/edit, a hook
 # bypass (--no-verify; -n on git commit) and a forced push (--force or -f; --force-with-lease and
 # --force-if-includes are not blocked). The whole command string is evaluated, compound commands

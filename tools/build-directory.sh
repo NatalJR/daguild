@@ -1,10 +1,10 @@
 #!/bin/sh
-# Builds the Claude Directory edition of guild from the working tree: the plugin with no hooks,
+# Builds the Claude Directory edition of daguild from the working tree: the plugin with no hooks,
 # because the Directory refuses hooks of type command from a non-verified publisher.
 # Usage: sh tools/build-directory.sh OUTDIR   (OUTDIR must be absent or an empty directory)
 #
 # - copied verbatim: .claude-plugin/marketplace.json, .claude-plugin/icon.png, LICENSE,
-#   .gitattributes, agents/, skills/git/, skills/guild/DAG.md, charter/TEMPLATE.md,
+#   .gitattributes, agents/, skills/git/, skills/daguild/DAG.md, charter/TEMPLATE.md,
 #   charter/SCHEMA.md. workflows/ is not shipped: the Directory validator holds workflow
 #   JavaScript as scripts it cannot follow.
 # - agents/: each shipped agents/<name>.md must pin in its frontmatter the model and effort that
@@ -15,18 +15,18 @@
 #   every other line is kept byte for byte, bar the comma of the member that ends up last.
 # - edition text edits (apply_edition_edits below): literal replacements in the copied files; each old
 #   text must occur exactly once in its file.
-# - skills/guild/SKILL.md and README.md: the overlays under editions/directory/.
-# - output-styles/guild.md: editions/directory/output-style.md, a blank line, context/always-on.md,
+# - skills/daguild/SKILL.md and README.md: the overlays under editions/directory/.
+# - output-styles/daguild.md: editions/directory/output-style.md, a blank line, context/always-on.md,
 #   a blank line, context/procedure.md, both parts rendered by hooks/session-context.sh with the
 #   shipped switch defaults; procedure.md alone renders with git handling on, so the commit line
-#   names the guild git skill (which deactivates itself when the user's option is off) while
+#   names the daguild git skill (which deactivates itself when the user's option is off) while
 #   always-on.md lists no changed switch; HOME and the project directory point at a fresh empty
 #   directory. The harness applies a force-for-plugin output style to every session but does not
 #   substitute ${CLAUDE_PLUGIN_ROOT} inside it, so the rendered plugin root followed by / becomes
-#   `<guild>/`.
+#   `<daguild>/`.
 # A missing input, an agent pin that differs from its option default, an edit whose old text does
 # not occur exactly once, an empty render, a render that keeps a {{ marker, the plugin root or a
-# `## Guild switches changed` section, a plugin.json that still declares a model or effort
+# `## DaGuild switches changed` section, a plugin.json that still declares a model or effort
 # option, lacks git_handling or has a comma
 # before a closing } or ], or a tree that holds hooks/, a file declaring a command hook, or an
 # agent or skill frontmatter with a hooks: key fails the build (exit 1; the tree is left for
@@ -37,7 +37,7 @@ set -u
 
 OVERLAY_DIR=editions/directory
 RENDERER=hooks/session-context.sh
-ROOT_PLACEHOLDER='<guild>/'
+ROOT_PLACEHOLDER='<daguild>/'
 RENDER_DIR=''
 
 fail() {
@@ -68,13 +68,13 @@ copy_shipped_files() {
   for shipped_dir in agents skills/git; do
     copy_directory "$shipped_dir"
   done
-  copy_file skills/guild/DAG.md
+  copy_file skills/daguild/DAG.md
   copy_file charter/TEMPLATE.md
   copy_file charter/SCHEMA.md
 }
 
 copy_overlay_files() {
-  copy_file skills/guild/SKILL.md "$OVERLAY_DIR/skills/guild/SKILL.md"
+  copy_file skills/daguild/SKILL.md "$OVERLAY_DIR/skills/daguild/SKILL.md"
   [ -f "$OVERLAY_DIR/README.md" ] || fail "missing $OVERLAY_DIR/README.md, the edition's README"
   copy_file README.md "$OVERLAY_DIR/README.md"
 }
@@ -157,14 +157,14 @@ replace_once() {
 
 # The edition's text edits, one per line: file, old text, new text.
 apply_edition_edits() {
-  replace_once skills/guild/DAG.md 'injected into every session (`context/procedure.md`)' \
-    'carried into every session by the guild output style'
-  replace_once skills/guild/DAG.md ' (user-adjustable through the plugin options)' ''
-  replace_once skills/guild/DAG.md \
-    ' Workflow scripts follow the same rule: no `effort` on `guild:*` agents; a value only on the default workflow agent.' ''
+  replace_once skills/daguild/DAG.md 'injected into every session (`context/procedure.md`)' \
+    'carried into every session by the daguild output style'
+  replace_once skills/daguild/DAG.md ' (user-adjustable through the plugin options)' ''
+  replace_once skills/daguild/DAG.md \
+    ' Workflow scripts follow the same rule: no `effort` on `daguild:*` agents; a value only on the default workflow agent.' ''
   replace_once .claude-plugin/plugin.json \
-    "Let the guild handle git: a generic git skill plus a guard hook that denies AI attribution, --no-verify and forced pushes. Off: your project's own git conventions apply." \
-    "Let the guild handle git through its generic git skill. Off: your project's own git conventions apply."
+    "Let daguild handle git: a generic git skill plus a guard hook that denies AI attribution, --no-verify and forced pushes. Off: your project's own git conventions apply." \
+    "Let daguild handle git through its generic git skill. Off: your project's own git conventions apply."
 }
 
 # Fails when a line of the shipped plugin.json ending in a comma is directly followed by a line
@@ -237,8 +237,8 @@ write_plugin_manifest() {
 
 # Prints stdin with every ROOT_FORWARD followed by / replaced by ROOT_PLACEHOLDER.
 replace_root() {
-  GUILD_ROOT="$ROOT_FORWARD/" GUILD_PLACEHOLDER=$ROOT_PLACEHOLDER awk '
-    BEGIN { root = ENVIRON["GUILD_ROOT"]; placeholder = ENVIRON["GUILD_PLACEHOLDER"] }
+  DAGUILD_ROOT="$ROOT_FORWARD/" DAGUILD_PLACEHOLDER=$ROOT_PLACEHOLDER awk '
+    BEGIN { root = ENVIRON["DAGUILD_ROOT"]; placeholder = ENVIRON["DAGUILD_PLACEHOLDER"] }
     {
       rest = $0
       replaced = ""
@@ -269,7 +269,7 @@ render_part() {
   placed=$(printf '%s\n' "$RENDERED" | replace_root) || fail "cannot replace the plugin root in $1"
   ! contains "$placed" '{{' || fail "rendered $1 keeps a {{ marker"
   ! contains "$placed" "$ROOT_FORWARD" || fail "rendered $1 still names the plugin root $ROOT_FORWARD"
-  ! contains "$placed" '## Guild switches changed' || fail "rendered $1 lists changed switches"
+  ! contains "$placed" '## DaGuild switches changed' || fail "rendered $1 lists changed switches"
   printf '%s\n' "$placed"
 }
 
@@ -281,7 +281,7 @@ make_render_dir() {
 write_output_style() {
   header="$OVERLAY_DIR/output-style.md"
   [ -f "$header" ] || fail "missing $header"
-  make_parent output-styles/guild.md
+  make_parent output-styles/daguild.md
   make_render_dir
   {
     cat "$header" || fail "cannot read $header"
@@ -289,7 +289,7 @@ write_output_style() {
     render_part context/always-on.md ''
     printf '\n'
     render_part context/procedure.md true
-  } >"$OUT/output-styles/guild.md"
+  } >"$OUT/output-styles/daguild.md"
 }
 
 # Fails when the frontmatter of a shipped agent or skill declares hooks.

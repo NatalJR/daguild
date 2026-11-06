@@ -1,13 +1,13 @@
-// cleanup-audit: the find-only audit wave of the guild cleanup pass
-// (skills/guild/DAG.md `## Cleanup pass`, step 1).
+// cleanup-audit: the find-only audit wave of the daguild cleanup pass
+// (skills/daguild/DAG.md `## Cleanup pass`, step 1).
 //
-// One guild:reviewer auditor per area group plus one guild:security auditor in
+// One daguild:reviewer auditor per area group plus one daguild:security auditor in
 // repo-state mode run as a single wave; every finding then faces an independent
 // refuter with the matching lens, and only unrefuted findings come back. The
 // script never edits files: the main thread consolidates the result by theme
 // afterwards (step 2). The main thread runs `/code-review` alongside this wave.
 //
-// Invocation: /guild:cleanup-audit with args as a JSON object.
+// Invocation: /daguild:cleanup-audit with args as a JSON object.
 // Permission: add `Workflow(cleanup-audit)` to `permissions.allow`.
 //
 // args: {
@@ -20,7 +20,7 @@
 // `unverified` holds findings whose refuter died (kept, never silently dropped);
 // `totals.groupsDropped` names every group whose auditor died.
 //
-// Every agent here is a guild:* agent and runs at the effort of its own frontmatter (the
+// Every agent here is a daguild:* agent and runs at the effort of its own frontmatter (the
 // per-agent plugin options); the workflow passes no effort.
 //
 // The review switches (review.norms, review.correctness, review.security) are not read here:
@@ -32,16 +32,16 @@ export const meta = {
   name: 'cleanup-audit',
   description: 'Cleanup pass audit wave: one reviewer per area group plus a repo-state security auditor, find-only, every finding independently refuted',
   phases: [
-    { title: 'Audit', detail: 'One guild:reviewer per area group and one guild:security repo-state auditor, find-only' },
+    { title: 'Audit', detail: 'One daguild:reviewer per area group and one daguild:security repo-state auditor, find-only' },
     { title: 'Verify', detail: 'One refuter per finding with the matching lens; only unrefuted findings are kept' }
   ]
 }
 
 // twin: workflows/review-wave.js (keep both copies identical)
 const SECURITY_DIMENSION = 'security'
-const SECURITY_AGENT = 'guild:security'
-// guild:* agents run at the effort of their own frontmatter (the per-agent plugin options), so no agent() call
-// with a guild:* agentType passes effort; guild:security is never downgraded (README.md agents table).
+const SECURITY_AGENT = 'daguild:security'
+// daguild:* agents run at the effort of their own frontmatter (the per-agent plugin options), so no agent() call
+// with a daguild:* agentType passes effort; daguild:security is never downgraded (README.md agents table).
 const TEXT = { type: 'string' }
 const SEVERITY = { type: 'string', enum: ['red', 'yellow', 'blue', 'question'] }
 
@@ -94,7 +94,7 @@ function findingsSchema(dimension) {
 
 function refuteLens(isSecurity) {
   if (isSecurity) return { agentType: SECURITY_AGENT, rules: SECURITY_REFUTE_RULES }
-  return { agentType: 'guild:reviewer', rules: REFUTE_RULES }
+  return { agentType: 'daguild:reviewer', rules: REFUTE_RULES }
 }
 
 function parseArgs(raw) {
@@ -162,7 +162,7 @@ function logGroupCount(groups) {
 function findingsPrompt(group) {
   return [
     `Cleanup-pass audit wave, area group "${group.name}". Audit every file under: ${group.paths.join(', ')}.`,
-    'Check each file against the project charter rules (`.claude/guild.md` `## Rules` and every rule file whose globs match the file) and the universal rules.',
+    'Check each file against the project charter rules (`.claude/daguild.md` `## Rules` and every rule file whose globs match the file) and the universal rules.',
     'Cover the full non-security checklist: naming, structure, readability, duplication, dead code, unjustified suppressions, and concrete extractables naming every file that shares the pattern. Blue findings included.',
     'dimension: the checklist item the finding belongs to; use "security" only for a finding that is security scope.',
     FIND_ONLY
@@ -189,7 +189,7 @@ function refutePrompt(finding, rules) {
 
 function find(group, securityScope) {
   const isSecurity = group.name === SECURITY_GROUP
-  const agentType = isSecurity ? SECURITY_AGENT : 'guild:reviewer'
+  const agentType = isSecurity ? SECURITY_AGENT : 'daguild:reviewer'
   return agent(isSecurity ? securityPrompt(securityScope) : findingsPrompt(group), {
     label: `audit:${group.name}`,
     phase: 'Audit',

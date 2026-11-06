@@ -54,7 +54,7 @@ function Get-CanonicalFilePath([string]$Path) {
 
 # Case-insensitive prefix match against the project root, with a trailing slash.
 function Test-InsideProject([string]$Path) {
-    $projectDirectory = Get-GuildProjectDir
+    $projectDirectory = Get-DaGuildProjectDir
     if ($projectDirectory -eq '') { return $true }
     $projectRoot = Get-AbsoluteDirectory (ConvertTo-ForwardSlash $projectDirectory)
     if ($null -eq $projectRoot) { $projectRoot = ConvertTo-ForwardSlash $projectDirectory }
@@ -102,8 +102,8 @@ function Get-FirstEmojiLine([string]$Path) {
 
 # The exit status: 2 after printing the hit, 0 otherwise.
 function Invoke-EmojiScan {
-    Import-GuildConfig
-    if (-not (Get-GuildSwitch 'hooks.emoji_scan')) { return 0 }
+    Import-DaGuildConfig
+    if (-not (Get-DaGuildSwitch 'hooks.emoji_scan')) { return 0 }
     $filePath = Get-PayloadField (Read-Payload) 'file_path'
     if ($null -eq $filePath) { return 0 }
     if (-not (Test-Scannable $filePath (ConvertTo-ForwardSlash $filePath))) { return 0 }

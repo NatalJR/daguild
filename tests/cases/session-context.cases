@@ -9,8 +9,8 @@
 #     case=<description>      printed on failure
 #     hook=<name>             hooks/<name>.sh or hooks/<name>.ps1
 #     part=<argument>         the one argument passed to the hook
-#     user-conf=<line> +      one line of ~/.claude/guild.conf, HOME pointed at a scratch dir
-#     project-conf=<line> +   one line of <project>/.claude/guild.conf, CLAUDE_PROJECT_DIR pointed
+#     user-conf=<line> +      one line of ~/.claude/daguild.conf, HOME pointed at a scratch dir
+#     project-conf=<line> +   one line of <project>/.claude/daguild.conf, CLAUDE_PROJECT_DIR pointed
 #                             at a scratch dir that also holds a copy of fixtures/project/emoji.md
 #     agents-copy=yes         CLAUDE_PLUGIN_ROOT pointed at a scratch dir holding a copy of agents/
 #                             and of hooks/lib/ (when the plugin root has one; the hooks source
@@ -31,7 +31,7 @@
 #   %ROOT% the plugin root under test (the repository by default) as the hooks render it
 #   (forward slashes), agents-copy cases included.
 # - Environment before each case: CLAUDE_PLUGIN_ROOT the plugin root under test (the repository
-#   by default), CLAUDE_PROJECT_DIR fixtures/project, HOME fixtures/home (no guild.conf),
+#   by default), CLAUDE_PROJECT_DIR fixtures/project, HOME fixtures/home (no daguild.conf),
 #   CLAUDE_PLUGIN_OPTION_GIT_HANDLING and every CLAUDE_PLUGIN_OPTION_<AGENT>_MODEL / _EFFORT
 #   unset. Setup order: user-conf, project-conf, agents-copy, env, unset.
 # - A record is one case; it passes when every expectation holds.
@@ -49,32 +49,32 @@ stdout=- Length budget: a status update is at most six lines.
 case=session-context: shipped defaults print no switches-changed section
 hook=session-context
 part=context/always-on.md
-stdout-lacks=## Guild switches changed
+stdout-lacks=## DaGuild switches changed
 
 case=session-context: plugin option true prints git.handling=on
 hook=session-context
 part=context/always-on.md
 env=CLAUDE_PLUGIN_OPTION_GIT_HANDLING=true
-stdout=## Guild switches changed%NL%%NL%git.handling=on
+stdout=## DaGuild switches changed%NL%%NL%git.handling=on
 
 case=session-context: review.security off prints review.security=off
 hook=session-context
 part=context/always-on.md
 project-conf=review.security = off
-stdout=## Guild switches changed%NL%%NL%review.security=off
+stdout=## DaGuild switches changed%NL%%NL%review.security=off
 
 case=session-context: switch set to its default prints no switches-changed section
 hook=session-context
 part=context/always-on.md
 user-conf=review.security = on
-stdout-lacks=## Guild switches changed
+stdout-lacks=## DaGuild switches changed
 
 case=session-context: git.handling on in a conf file is ignored
 hook=session-context
 part=context/always-on.md
 user-conf=git.handling = on
 project-conf=git.handling = on
-stdout-lacks=## Guild switches changed
+stdout-lacks=## DaGuild switches changed
 
 case=session-context: always-on default has no marker lines
 hook=session-context
@@ -97,7 +97,7 @@ case=session-context: switches-changed section lists the off key
 hook=session-context
 part=context/always-on.md
 user-conf=style.terse = off
-stdout=## Guild switches changed%NL%%NL%style.terse=off
+stdout=## DaGuild switches changed%NL%%NL%style.terse=off
 
 case=session-context: rules.universal off drops Universal code rules
 hook=session-context
@@ -116,7 +116,7 @@ case=session-context: switches-changed section only on the always-on part
 hook=session-context
 part=context/procedure.md
 user-conf=review.security = off
-stdout-lacks=## Guild switches changed
+stdout-lacks=## DaGuild switches changed
 
 case=session-context: procedure has no marker lines
 hook=session-context
@@ -126,7 +126,7 @@ stdout-lacks={{
 case=session-context: PLUGIN_ROOT replaced with a forward-slash path
 hook=session-context
 part=context/procedure.md
-stdout=%ROOT%/skills/guild/DAG.md
+stdout=%ROOT%/skills/daguild/DAG.md
 
 case=session-context: no PLUGIN_ROOT placeholder survives
 hook=session-context
@@ -171,7 +171,7 @@ stdout=all in one message.%NL%%NL%### Step 4
 case=session-context: site-map rule sits between the architect route and its prompt contents
 hook=session-context
 part=context/procedure.md
-stdout=`guild:architect`.%NL%  NEVER dispatch without an investigator site map.
+stdout=`daguild:architect`.%NL%  NEVER dispatch without an investigator site map.
 
 case=session-context: investigate_first off drops the site-map rule
 hook=session-context
@@ -183,7 +183,7 @@ case=session-context: investigate_first off keeps the architect prompt contents
 hook=session-context
 part=context/procedure.md
 user-conf=procedure.investigate_first = off
-stdout=`guild:architect`.%NL%  Prompt gets: task spec
+stdout=`daguild:architect`.%NL%  Prompt gets: task spec
 
 case=session-context: sharding off drops the shard rule
 hook=session-context
@@ -248,7 +248,7 @@ stderr-equals=
 case=session-context: plugin root missing prints nothing and exits 0
 hook=session-context
 part=context/procedure.md
-env=CLAUDE_PLUGIN_ROOT=/nonexistent/guild-plugin-root
+env=CLAUDE_PLUGIN_ROOT=/nonexistent/daguild-plugin-root
 exit=0
 stdout-equals=
 stderr-equals=
@@ -258,16 +258,16 @@ hook=session-context
 part=context/procedure.md
 stdout=Paraphrase receipts.%NL%Commits only on request, by the main thread, through the project's git skill named under `## Git`.%NL%QA surfaces
 
-case=session-context: Step 6 default lacks the guild git skill wording
+case=session-context: Step 6 default lacks the daguild git skill wording
 hook=session-context
 part=context/procedure.md
-stdout-lacks=Commits only on request, by the main thread, through the guild `git` skill.
+stdout-lacks=Commits only on request, by the main thread, through the daguild `git` skill.
 
-case=session-context: Step 6 routes commits through the guild git skill when git.handling is on
+case=session-context: Step 6 routes commits through the daguild git skill when git.handling is on
 hook=session-context
 part=context/procedure.md
 env=CLAUDE_PLUGIN_OPTION_GIT_HANDLING=true
-stdout=Paraphrase receipts.%NL%Commits only on request, by the main thread, through the guild `git` skill.%NL%QA surfaces
+stdout=Paraphrase receipts.%NL%Commits only on request, by the main thread, through the daguild `git` skill.%NL%QA surfaces
 
 case=session-context: Step 6 with git.handling on lacks the project git skill wording
 hook=session-context
@@ -287,8 +287,8 @@ part=context/procedure.md
 env=CLAUDE_PLUGIN_OPTION_GIT_HANDLING=true
 stdout-under=9000
 
-case=session-context: plugin option true picks the guild git skill wording
+case=session-context: plugin option true picks the daguild git skill wording
 hook=session-context
 part=context/procedure.md
 env=CLAUDE_PLUGIN_OPTION_GIT_HANDLING=true
-stdout=Commits only on request, by the main thread, through the guild `git` skill.
+stdout=Commits only on request, by the main thread, through the daguild `git` skill.

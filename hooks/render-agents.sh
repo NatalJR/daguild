@@ -122,7 +122,7 @@ main() {
     render_agent "$agent" || continue
   done
   [ -n "$RENDERED" ] || return 0
-  printf 'GUILD AGENTS RENDERED: %s. Run the reload-plugins command to apply.\n' "$RENDERED"
+  printf 'DAGUILD AGENTS RENDERED: %s. Run the reload-plugins command to apply.\n' "$RENDERED"
 }
 
 (main) 2>/dev/null

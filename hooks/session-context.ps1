@@ -1,12 +1,12 @@
 # SessionStart hook, PowerShell twin of session-context.sh (the primary implementation; the
-# harness runs this one only where no Git Bash is found). Prints one guild context file; the
+# harness runs this one only where no Git Bash is found). Prints one daguild context file; the
 # harness injects stdout as context.
 # Usage: & session-context.ps1 context/always-on.md
 # Rendering: a line `{{#if KEY}}` or `{{#if !KEY}}` opens a block and a line `{{/if}}` closes
 # it (no nesting); marker lines are always dropped and the block body is kept only while switch
 # KEY is on (`!KEY`: only while it is off).
 # `{{PLUGIN_ROOT}}` becomes the plugin path with forward slashes so the main thread can Read
-# DAG.md and the charter template. The always-on part gains a `## Guild switches changed`
+# DAG.md and the charter template. The always-on part gains a `## DaGuild switches changed`
 # section listing key=value for every switch that differs from its shipped default; the procedure
 # part prints nothing when procedure.default_mode is off.
 # Only context/always-on.md and context/procedure.md resolve; any other part, a missing file or
@@ -33,7 +33,7 @@ function Test-BlockKept([string]$Marker) {
         $switchName = $switchName.Substring(1)
         $wanted = $false
     }
-    return (Get-GuildSwitch $switchName) -eq $wanted
+    return (Get-DaGuildSwitch $switchName) -eq $wanted
 }
 
 # The keep state a marker line sets: on after `{{/if}}`, the block decision after an opening
@@ -48,8 +48,8 @@ function Get-MarkerState([string]$Marker) {
 function ConvertTo-RenderedText([string]$Content, [string]$RootForward) {
     $builder = New-Object System.Text.StringBuilder
     $keep = $true
-    foreach ($line in (Split-GuildLines $Content)) {
-        $state = Get-MarkerState (Remove-GuildCarriageReturn $line)
+    foreach ($line in (Split-DaGuildLines $Content)) {
+        $state = Get-MarkerState (Remove-DaGuildCarriageReturn $line)
         if ($null -ne $state) { $keep = $state }
         elseif ($keep) { [void]$builder.Append($line.Replace('{{PLUGIN_ROOT}}', $RootForward)).Append([char]10) }
     }
@@ -57,13 +57,13 @@ function ConvertTo-RenderedText([string]$Content, [string]$RootForward) {
 }
 
 function Get-SwitchesChangedSection {
-    $changed = Get-GuildChangedSwitches
+    $changed = Get-DaGuildChangedSwitches
     if ($changed -eq '') { return '' }
-    return "`n## Guild switches changed`n`n" + $changed.Replace(' ', ', ') + "`n"
+    return "`n## DaGuild switches changed`n`n" + $changed.Replace(' ', ', ') + "`n"
 }
 
 function Test-Suppressed([string]$Part) {
-    return (Get-BaseName $Part) -ceq 'procedure.md' -and -not (Get-GuildSwitch 'procedure.default_mode')
+    return (Get-BaseName $Part) -ceq 'procedure.md' -and -not (Get-DaGuildSwitch 'procedure.default_mode')
 }
 
 # True only for the two parts the sh twin resolves.
@@ -74,13 +74,13 @@ function Test-KnownPart([string]$Part) {
 # The text to print for PART; empty when nothing is printed.
 function Get-SessionContext([string]$Part) {
     if ($Part -eq '') { $Part = 'context/always-on.md' }
-    Import-GuildConfig
+    Import-DaGuildConfig
     if (Test-Suppressed $Part) { return '' }
     if (-not (Test-KnownPart $Part)) { return '' }
-    $root = Get-GuildPluginRoot
+    $root = Get-DaGuildPluginRoot
     if (-not [System.IO.File]::Exists($root + '/' + $Part)) { return '' }
     $rootForward = $root.Replace('\', '/')
-    $text = (ConvertTo-RenderedText ($GUILD_UTF8.GetString([System.IO.File]::ReadAllBytes($root + '/' + $Part))) $rootForward) + "`n"
+    $text = (ConvertTo-RenderedText ($DAGUILD_UTF8.GetString([System.IO.File]::ReadAllBytes($root + '/' + $Part))) $rootForward) + "`n"
     if ((Get-BaseName $Part) -ceq 'always-on.md') { $text += Get-SwitchesChangedSection }
     return $text
 }

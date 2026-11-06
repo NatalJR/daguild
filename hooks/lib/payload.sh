@@ -1,4 +1,4 @@
-# Hook payload access (sourced by the guild hooks; POSIX sh).
+# Hook payload access (sourced by the daguild hooks; POSIX sh).
 # The harness sends one compact JSON object on stdin. Fields are located by name with sed
 # and never parsed as code: the payload is untrusted data, only ever matched against fixed
 # patterns. The search is by name, so nested objects are fine; the first occurrence wins.

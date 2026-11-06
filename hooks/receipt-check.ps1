@@ -29,16 +29,16 @@ function Get-LeadingBytes([string]$Text, [int]$Count) {
     return , $leading
 }
 
-function Test-GuildAgent([string]$AgentType) {
-    return $AgentType -cmatch '^[Gg][Uu][Ii][Ll][Dd]:'
+function Test-DaGuildAgent([string]$AgentType) {
+    return $AgentType -cmatch '^[Dd][Aa][Gg][Uu][Ii][Ll][Dd]:'
 }
 
-# Scope: only guild agents carry the receipt contract, and a stop this hook already
+# Scope: only daguild agents carry the receipt contract, and a stop this hook already
 # re-prompted once (stop_hook_active) goes through to avoid a block loop.
 function Test-InScope([string]$Payload) {
     $agentType = Get-PayloadField $Payload 'agent_type'
     if ($null -eq $agentType) { return $false }
-    return (Test-GuildAgent $agentType) -and -not (Test-PayloadBool $Payload 'stop_hook_active')
+    return (Test-DaGuildAgent $agentType) -and -not (Test-PayloadBool $Payload 'stop_hook_active')
 }
 
 function Test-ReceiptLine([string]$Line) {
@@ -56,8 +56,8 @@ function Write-Rejection([string]$Line) {
 
 # The exit status: 2 after printing the rejection, 0 otherwise.
 function Invoke-ReceiptCheck {
-    Import-GuildConfig
-    if (-not (Get-GuildSwitch 'hooks.receipt_check')) { return 0 }
+    Import-DaGuildConfig
+    if (-not (Get-DaGuildSwitch 'hooks.receipt_check')) { return 0 }
     $payload = Read-Payload
     if (-not (Test-InScope $payload)) { return 0 }
     $firstLine = Get-FinalFirstLine $payload

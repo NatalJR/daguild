@@ -1,5 +1,5 @@
 #!/bin/sh
-# UserPromptSubmit hook: per-turn reinforcement of the guild context, since style drifts
+# UserPromptSubmit hook: per-turn reinforcement of the daguild context, since style drifts
 # in long sessions. The harness injects stdout as context. Switch: hooks.prompt_reinforce.
 # Any internal error prints nothing and exits 0 (never blocks a prompt).
 set -u
@@ -15,9 +15,9 @@ load_libraries() {
 
 main() {
   load_libraries || return 0
-  guild_config_load
-  guild_switch hooks.prompt_reinforce || return 0
-  printf '%s\n' 'GUILD DEFAULT MODE: replies at most six lines, universal code rules, coding requests walk the operating procedure in session context, no slash command.'
+  daguild_config_load
+  daguild_switch hooks.prompt_reinforce || return 0
+  printf '%s\n' 'DAGUILD DEFAULT MODE: replies at most six lines, universal code rules, coding requests walk the operating procedure in session context, no slash command.'
 }
 
 (main) 2>/dev/null

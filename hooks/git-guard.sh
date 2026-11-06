@@ -1,5 +1,5 @@
 #!/bin/sh
-# PreToolUse hook (Bash|PowerShell): the guild git guard. Denies, in the command text, AI
+# PreToolUse hook (Bash|PowerShell): the daguild git guard. Denies, in the command text, AI
 # attribution in a git commit or a PR create/edit, a hook bypass (--no-verify; -n on git
 # commit) and a forced push (--force or -f; --force-with-lease and --force-if-includes are not
 # blocked). The whole command string is evaluated, compound commands included.

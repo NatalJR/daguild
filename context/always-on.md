@@ -1,6 +1,6 @@
-# Guild context
+# DaGuild context
 
-Delegation crew active. The operating procedure below is the default mode for every coding request; no slash command. Agents: `guild:*`. Charter: `.claude/guild.md`.
+Delegation crew active. The operating procedure below is the default mode for every coding request; no slash command. Agents: `daguild:*`. Charter: `.claude/daguild.md`.
 
 {{#if style.terse}}
 ## Reply style
@@ -35,8 +35,8 @@ Delegation crew active. The operating procedure below is the default mode for ev
 ## Delegation
 
 - Main thread orchestrates, decides, verifies, commits. Agents render.
-- Code work walks the operating procedure below. `/guild <task>` only forces it on a trivial-looking request.
-- Long-form prose is dispatched to `guild:scribe` from an outline. Pages are code (builder/architect).
+- Code work walks the operating procedure below. `/daguild <task>` only forces it on a trivial-looking request.
+- Long-form prose is dispatched to `daguild:scribe` from an outline. Pages are code (builder/architect).
 - Subagents never commit, push, deploy, or run operator steps.
 - Shard over mega-agents.
 - Fan out by default. Serial only for data dependencies.

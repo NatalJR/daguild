@@ -101,8 +101,8 @@ scannable_payload_file() {
 
 main() {
   load_libraries || return 0
-  guild_config_load
-  guild_switch hooks.emoji_scan || return 0
+  daguild_config_load
+  daguild_switch hooks.emoji_scan || return 0
   scannable_payload_file || return 0
   hit_line=$(first_emoji_line "$file_path")
   [ -n "$hit_line" ] || return 0

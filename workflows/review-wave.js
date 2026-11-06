@@ -1,16 +1,16 @@
 // review-wave: the pre-commit review wave over one diff
 // (context/procedure.md Step 5: Review).
 //
-// Three dimensions run as one wave over the same diff: norms (guild:reviewer),
+// Three dimensions run as one wave over the same diff: norms (daguild:reviewer),
 // correctness (default workflow agent hunting real defects only), and security
-// (guild:security in diff-gate mode over args.securityScope). Every finding then
+// (daguild:security in diff-gate mode over args.securityScope). Every finding then
 // faces an independent refuter with the matching lens, and only unrefuted findings
 // come back. Find-only: the main thread runs the fix loop afterwards.
 // The correctness dimension is a prompt-driven finder because workflow agents
 // cannot invoke the `code-review` skill, which stays the main thread's tool
 // outside workflows.
 //
-// Invocation: /guild:review-wave with args as a JSON object.
+// Invocation: /daguild:review-wave with args as a JSON object.
 // Permission: add `Workflow(review-wave)` to `permissions.allow`.
 //
 // args: {
@@ -19,7 +19,7 @@
 //                            // and contain no `|`, `;`, `&`, `>`, `<`, backtick, `$(`, line break, or file-writing `--output`/`-o` option
 //                            // (attached `-ofile` included; `--output-indicator-*` is over-rejected by design)
 //   securityScope?: string,  // surfaces the security gate covers; default: the Step 5 triggers plus the charter `## Security`
-//   effort?: string          // correctness effort: low, medium, high, xhigh, max; default high; the guild:* agents
+//   effort?: string          // correctness effort: low, medium, high, xhigh, max; default high; the daguild:* agents
 //                            // (norms, security, every refuter) run at the effort of their own frontmatter
 // }
 //
@@ -37,16 +37,16 @@ export const meta = {
   name: 'review-wave',
   description: 'Pre-commit review wave over one diff: norms, correctness and security reviewers, find-only, every finding independently refuted',
   phases: [
-    { title: 'Review', detail: 'Norms (guild:reviewer), correctness (bug hunt) and security (guild:security diff gate) over the same diff, find-only' },
+    { title: 'Review', detail: 'Norms (daguild:reviewer), correctness (bug hunt) and security (daguild:security diff gate) over the same diff, find-only' },
     { title: 'Verify', detail: 'One refuter per finding with the matching lens; only unrefuted findings are kept' }
   ]
 }
 
 // twin: workflows/cleanup-audit.js (keep both copies identical)
 const SECURITY_DIMENSION = 'security'
-const SECURITY_AGENT = 'guild:security'
-// guild:* agents run at the effort of their own frontmatter (the per-agent plugin options), so no agent() call
-// with a guild:* agentType passes effort; guild:security is never downgraded (README.md agents table).
+const SECURITY_AGENT = 'daguild:security'
+// daguild:* agents run at the effort of their own frontmatter (the per-agent plugin options), so no agent() call
+// with a daguild:* agentType passes effort; daguild:security is never downgraded (README.md agents table).
 const TEXT = { type: 'string' }
 const SEVERITY = { type: 'string', enum: ['red', 'yellow', 'blue', 'question'] }
 
@@ -99,7 +99,7 @@ function findingsSchema(dimension) {
 
 function refuteLens(isSecurity) {
   if (isSecurity) return { agentType: SECURITY_AGENT, rules: SECURITY_REFUTE_RULES }
-  return { agentType: 'guild:reviewer', rules: REFUTE_RULES }
+  return { agentType: 'daguild:reviewer', rules: REFUTE_RULES }
 }
 
 function parseArgs(raw) {
@@ -140,7 +140,7 @@ const SHELL_OPERATORS = /[|;&<>`\r\n]|\$\(/
 const WRITING_OPTIONS = /(^|\s)(--output\b|-o\S*)/
 
 const NORMS_FOCUS = [
-  'Dimension: norms and structure. Check the changed code against the project charter rules (`.claude/guild.md` `## Rules` and every rule file whose globs match the changed paths) and the universal rules:',
+  'Dimension: norms and structure. Check the changed code against the project charter rules (`.claude/daguild.md` `## Rules` and every rule file whose globs match the changed paths) and the universal rules:',
   'naming, structure, readability, duplication, dead code, unjustified suppressions, docs drift. Correctness bugs and security are out of scope for you.'
 ].join('\n')
 
@@ -276,7 +276,7 @@ if (error) return { error }
 const diffCommand = input.diffCommand
 const effort = effortOf(input.effort)
 const dimensions = [
-  { name: 'norms', agentType: 'guild:reviewer', prompt: NORMS_FOCUS },
+  { name: 'norms', agentType: 'daguild:reviewer', prompt: NORMS_FOCUS },
   { name: 'correctness', agentType: null, prompt: CORRECTNESS_FOCUS },
   { name: SECURITY_DIMENSION, agentType: SECURITY_AGENT, prompt: securityFocus(input.securityScope || DEFAULT_SECURITY_SCOPE) }
 ]

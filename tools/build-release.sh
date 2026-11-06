@@ -126,10 +126,10 @@ compile_source() {
     # The lines that apply every defaults entry as a declared default, at INDENT.
     function print_defaults(indent,   i) {
       if (!defaults_loaded) load_defaults()
-      if (language == "sh") print indent "_guild_config_mode=declare"
+      if (language == "sh") print indent "_daguild_config_mode=declare"
       for (i = 1; i <= defaults_count; i++) {
-        if (language == "sh") print indent "_guild_config_apply " q defaults[i] q
-        else print indent "Add-GuildConfigLine " q defaults[i] q " " q "declare" q
+        if (language == "sh") print indent "_daguild_config_apply " q defaults[i] q
+        else print indent "Add-DaGuildConfigLine " q defaults[i] q " " q "declare" q
       }
     }
     # Prints one library line, the defaults line expanded; returns 1 for the defaults line.

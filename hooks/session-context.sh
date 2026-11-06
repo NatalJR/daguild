@@ -1,5 +1,5 @@
 #!/bin/sh
-# SessionStart hook: prints one guild context file; the harness injects stdout as context.
+# SessionStart hook: prints one daguild context file; the harness injects stdout as context.
 # Usage: sh session-context.sh context/always-on.md
 # One hook entry per file, because the harness caps a single hook's stdout near 10KB and
 # replaces anything larger with a 2KB preview (the context size check keeps each part under
@@ -10,7 +10,7 @@
 # while switch NAME is on (`!NAME`: only while it is off).
 # PLUGIN_ROOT wrapped in two opening and two closing braces becomes the plugin path with forward
 # slashes so the main thread can Read DAG.md and the charter template. The always-on part gains
-# a `## Guild switches changed` section listing name=value for every switch that differs from its
+# a `## DaGuild switches changed` section listing name=value for every switch that differs from its
 # shipped default; the procedure part prints nothing when procedure.default_mode is off.
 # Only context/always-on.md and context/procedure.md resolve; any other part, a missing file or
 # any internal error prints nothing and exits 0 (never blocks a session).
@@ -70,7 +70,7 @@ open_block() {
   block_wanted=on
   block_name=${block_switch#!}
   [ "$block_name" = "$block_switch" ] || block_wanted=off
-  if guild_switch "$block_name"; then block_state=on; else block_state=off; fi
+  if daguild_switch "$block_name"; then block_state=on; else block_state=off; fi
   if [ "$block_state" = "$block_wanted" ]; then keep=yes; else keep=no; fi
 }
 
@@ -105,14 +105,14 @@ render_file() {
 }
 
 print_switches_changed() {
-  changed=$(guild_changed_switches)
+  changed=$(daguild_changed_switches)
   [ -n "$changed" ] || return 0
   replace_all "$changed" ' ' ', '
-  printf '\n## Guild switches changed\n\n%s\n' "$REPLACED"
+  printf '\n## DaGuild switches changed\n\n%s\n' "$REPLACED"
 }
 
 is_suppressed() {
-  [ "${1##*/}" = procedure.md ] && ! guild_switch procedure.default_mode
+  [ "${1##*/}" = procedure.md ] && ! daguild_switch procedure.default_mode
 }
 
 select_part_file() {
@@ -128,7 +128,7 @@ select_part_file() {
 main() {
   part=${1:-context/always-on.md}
   load_libraries || return 0
-  guild_config_load
+  daguild_config_load
   ! is_suppressed "$part" || return 0
   select_part_file "$part" || return 0
   [ -f "$part_file" ] && [ -r "$part_file" ] || return 0

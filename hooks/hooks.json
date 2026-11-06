@@ -7,19 +7,19 @@
             "type": "command",
             "command": "exec sh \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.sh\" context/always-on.md\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.ps1\" context/always-on.md; exit $LASTEXITCODE",
             "timeout": 5,
-            "statusMessage": "Loading guild context..."
+            "statusMessage": "Loading daguild context..."
           },
           {
             "type": "command",
             "command": "exec sh \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.sh\" context/procedure.md\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/session-context.ps1\" context/procedure.md; exit $LASTEXITCODE",
             "timeout": 5,
-            "statusMessage": "Loading guild procedure..."
+            "statusMessage": "Loading daguild procedure..."
           },
           {
             "type": "command",
             "command": "exec sh \"${CLAUDE_PLUGIN_ROOT}/hooks/render-agents.sh\"\n& \"${CLAUDE_PLUGIN_ROOT}/hooks/render-agents.ps1\"; exit $LASTEXITCODE",
             "timeout": 5,
-            "statusMessage": "Rendering guild agent options..."
+            "statusMessage": "Rendering daguild agent options..."
           }
         ]
       }

@@ -1,4 +1,4 @@
-# Hook payload access and hook output (dot-sourced by the guild PowerShell hooks; twin of
+# Hook payload access and hook output (dot-sourced by the daguild PowerShell hooks; twin of
 # payload.sh, which is the primary implementation and the reference for every rule below).
 # The harness sends one compact JSON object on stdin. Fields are located by key name with fixed
 # substitutions and never parsed as code: the payload is untrusted data, only ever matched

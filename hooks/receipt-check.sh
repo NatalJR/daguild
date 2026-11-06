@@ -21,17 +21,17 @@ load_libraries() {
   . "${CLAUDE_PLUGIN_ROOT}/hooks/lib/config.sh"
 }
 
-# AGENT_TYPE: succeeds for a guild:* agent, the prefix in any case. The Claude Directory
+# AGENT_TYPE: succeeds for a daguild:* agent, the prefix in any case. The Claude Directory
 # validator cannot read `case` statements, so the match is a `[ ]` test.
-is_guild_agent() {
-  [ "${1#[Gg][Uu][Ii][Ll][Dd]:}" != "$1" ]
+is_daguild_agent() {
+  [ "${1#[Dd][Aa][Gg][Uu][Ii][Ll][Dd]:}" != "$1" ]
 }
 
-# Scope: only guild agents carry the receipt contract, and a stop this hook already
+# Scope: only daguild agents carry the receipt contract, and a stop this hook already
 # re-prompted once (stop_hook_active) goes through to avoid a block loop.
 in_scope() {
   agent_type=$(payload_field agent_type) || return 1
-  is_guild_agent "$agent_type" && ! payload_bool stop_hook_active
+  is_daguild_agent "$agent_type" && ! payload_bool stop_hook_active
 }
 
 is_receipt_line() {
@@ -47,8 +47,8 @@ reject() {
 
 main() {
   load_libraries || return 0
-  guild_config_load
-  guild_switch hooks.receipt_check || return 0
+  daguild_config_load
+  daguild_switch hooks.receipt_check || return 0
   payload_read
   in_scope || return 0
   final_text=$(payload_field last_assistant_message) || return 0
