@@ -1018,6 +1018,15 @@ expect_frontmatter_line() {
   pass
 }
 
+# KEY: the output style frontmatter has no line declaring KEY.
+expect_frontmatter_lacks_key() {
+  describe "directory edition: output style frontmatter lacks [$1]"
+  output_style_frontmatter | awk -v key="$1" '{ sub(/\r$/, "") }
+    substr($0, 1, length(key)) == key && substr($0, length(key) + 1) ~ /^[ \t]*:/ { found = 1 }
+    END { exit found }' || { fail "frontmatter declares [$1]"; return 0; }
+  pass
+}
+
 check_edition_layout() {
   describe 'directory edition: no hooks/, config/, context/ or workflows/'
   expect_equal '' "$(for shipped_dir in hooks config context workflows; do [ ! -e "$EDITION_TREE/$shipped_dir" ] || printf '%s ' "$shipped_dir"; done)"
@@ -1025,10 +1034,12 @@ check_edition_layout() {
   expect_equal '6' "$(($(find "$EDITION_TREE/agents" -type f | wc -l)))"
   expect_edition_text 'daguild skill names the DAG through the plugin root' skills/daguild/SKILL.md \
     '${CLAUDE_PLUGIN_ROOT}/skills/daguild/DAG.md'
+  expect_edition_text 'daguild skill names the output style selection' skills/daguild/SKILL.md \
+    '/output-style daguild:daguild'
 }
 
 check_edition_output_style() {
-  expect_frontmatter_line 'force-for-plugin: true'
+  expect_frontmatter_lacks_key 'force-for-plugin'
   expect_frontmatter_line 'keep-coding-instructions: true'
   expect_edition_text 'output style carries the procedure' output-styles/daguild.md '## Operating procedure (default mode)'
   expect_edition_text 'output style carries the reply style' output-styles/daguild.md '## Reply style'
@@ -1177,6 +1188,17 @@ check_edition_refuses_frontmatter_colon_without_space() {
   expect_edition_frontmatter_refusal 'a frontmatter key colon without a following space' 'is not a plain key'
 }
 
+# Builds from a scratch copy of the repository whose edition output style carries force-for-plugin,
+# which the Directory refuses from a non-verified publisher.
+check_edition_refuses_output_style_force_for_plugin() {
+  new_scratch_dir
+  copy_repository "$SCRATCH_DIR/repository"
+  awk 'NR == 2 { print "force-for-plugin: true" } { print }' "$REPO_ROOT/editions/directory/output-style.md" \
+    >"$SCRATCH_DIR/repository/editions/directory/output-style.md"
+  expect_edition_frontmatter_refusal 'an output style force-for-plugin key' \
+    'frontmatter key force-for-plugin is outside'
+}
+
 # Builds from a scratch copy of the repository whose builder agent carries a skills list split by a
 # blank line and a column-0 comment; expects the edition's builder frontmatter to lose the whole list.
 check_edition_drops_skills_across_blank_line() {
@@ -1212,6 +1234,7 @@ check_edition_refuses_frontmatter_opener_trailing_space
 check_edition_refuses_tab_indented_frontmatter_key
 check_edition_refuses_frontmatter_lone_carriage_return
 check_edition_refuses_frontmatter_colon_without_space
+check_edition_refuses_output_style_force_for_plugin
 check_edition_drops_skills_across_blank_line
 
 # ---------------------------------------------------------------- summary

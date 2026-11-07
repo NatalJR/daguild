@@ -23,9 +23,10 @@
 #   shipped switch defaults; procedure.md alone renders with git handling on, so the commit line
 #   names the daguild git skill (which deactivates itself when the user's option is off) while
 #   always-on.md lists no changed switch; HOME and the project directory point at a fresh empty
-#   directory. The harness applies a force-for-plugin output style to every session but does not
-#   substitute ${CLAUDE_PLUGIN_ROOT} inside it, so the rendered plugin root followed by / becomes
-#   `<daguild>/`.
+#   directory. The user selects the style as `daguild:daguild` (per project, or for every project
+#   via outputStyle in ~/.claude/settings.json) (the Directory refuses force-for-plugin from a
+#   non-verified publisher), and the harness does not substitute ${CLAUDE_PLUGIN_ROOT} inside an
+#   output style, so the rendered plugin root followed by / becomes `<daguild>/`.
 # A missing input, an agent pin that differs from its option default, an edit whose old text does
 # not occur exactly once, an empty render, a render that keeps a {{ marker, the plugin root or a
 # `## DaGuild switches changed` section, a plugin.json that still declares a model or effort
@@ -47,7 +48,7 @@ RENDER_DIR=''
 # 2026-11-06); any other key is finding LOCAL_CODE_FRONTMATTER_KEY.
 AGENT_FRONTMATTER_KEYS='name description tools model effort'
 SKILL_FRONTMATTER_KEYS='name description argument-hint'
-OUTPUT_STYLE_FRONTMATTER_KEYS='name description keep-coding-instructions force-for-plugin'
+OUTPUT_STYLE_FRONTMATTER_KEYS='name description keep-coding-instructions'
 
 fail() {
   printf 'build-directory: %s\n' "$1" >&2
@@ -205,7 +206,7 @@ replace_once() {
 # The edition's text edits, one per line: file, old text, new text.
 apply_edition_edits() {
   replace_once skills/daguild/DAG.md 'injected into every session (`context/procedure.md`)' \
-    'carried into every session by the daguild output style'
+    'carried into every session by the daguild output style once selected (`/output-style daguild:daguild`)'
   replace_once skills/daguild/DAG.md ' (user-adjustable through the plugin options)' ''
   replace_once skills/daguild/DAG.md \
     ' Workflow scripts follow the same rule: no `effort` on `daguild:*` agents; a value only on the default workflow agent.' ''

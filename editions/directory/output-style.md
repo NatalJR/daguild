@@ -1,7 +1,6 @@
 ---
 name: daguild
 description: DaGuild delegation crew default mode - terse replies, universal code rules, and the operating procedure every coding request walks.
-force-for-plugin: true
 keep-coding-instructions: true
 ---
 

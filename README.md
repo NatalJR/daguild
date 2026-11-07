@@ -135,13 +135,14 @@ Update with `/plugin update daguild`.
 
 This section states the two editions of the plugin and how they differ.
 
-In the full edition, hooks inject the procedure and the universal rules at session start and repeat a short reminder on every prompt, and three hooks enforce part of the rules: the emoji scan, the receipt check, and the opt-in git guard (off by default). The Claude Directory edition runs no scripts at all: the same procedure and rules reach Claude through the output style, as instructions only, and nothing enforces them. Install exactly one.
+In the full edition, hooks inject the procedure and the universal rules at session start and repeat a short reminder on every prompt, and three hooks enforce part of the rules: the emoji scan, the receipt check, and the opt-in git guard (off by default). The Claude Directory edition runs no scripts at all: the same procedure and rules reach Claude through the output style once you select it, as instructions only, and nothing enforces them. Install exactly one.
 
 | | Full edition | Claude Directory edition |
 |---|---|---|
 | Get it from | GitHub marketplace `NatalJR/daguild` (or a local checkout) | the Claude Directory, via `/plugin` |
 | Six agents, `/daguild` skill, DAG rules, charter `.claude/daguild.md` | same | same |
-| How the procedure reaches Claude | injected at session start by a hook | output style `daguild`, applied automatically and sent with every request; while the plugin is enabled it replaces any output style you selected |
+| How the procedure reaches Claude | injected at session start by a hook | output style `daguild:daguild`, selected by the user per project (`/output-style daguild:daguild`) or once for every project (`outputStyle` in `~/.claude/settings.json`), then sent with every request |
+| Setup after install | none | select the `daguild:daguild` output style: per project via `/output-style daguild:daguild`, or once for every project via `outputStyle` in `~/.claude/settings.json` |
 | Per-prompt reminder | yes | no (the output style is sent with every request instead) |
 | `daguild.conf` switches | yes | no, every switch fixed at its default |
 | Git handling option | generic `git` skill plus a guard hook denying AI attribution, `--no-verify` and forced pushes | `git` skill only, no guard hook |
@@ -153,10 +154,10 @@ In the full edition, hooks inject the procedure and the universal rules at sessi
 
 How the Directory edition is built:
 
-- **Context:** the output style `daguild` with force-for-plugin carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME).
+- **Context:** the output style `daguild` (selected as `daguild:daguild`) carries the rendered always-on context and the operating procedure, rendered at build time with every switch at its default (by running `hooks/session-context.sh` with an empty HOME). It ships without `force-for-plugin` because the directory refuses that key from publishers that are not Verified organizations (finding `LOCAL_CODE_FRONTMATTER_KEY`), so the user selects it.
 - **Skill overlay:** `editions/directory/skills/daguild/SKILL.md` replaces the daguild skill and gives the resolved plugin paths.
 - **Manifest and README:** `plugin.json` drops the per-agent model and effort options; `editions/directory/README.md` becomes its `README.md`.
-- **Frontmatter:** agents drop the `skills` key, so the security agent invokes `security-review` through the Skill tool instead of preloading it; the build fails on any frontmatter key outside the list the directory accepts from community plugins (finding `LOCAL_CODE_FRONTMATTER_KEY`).
+- **Frontmatter:** agents drop the `skills` key, so the security agent invokes `security-review` through the Skill tool instead of preloading it, and the output style carries no `force-for-plugin` key (the build refuses it); the build fails on any frontmatter key outside the list the directory accepts from community plugins (finding `LOCAL_CODE_FRONTMATTER_KEY`).
 
 Maintainer notes:
 

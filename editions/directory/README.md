@@ -6,9 +6,11 @@ This is the Claude Directory edition: it has no hooks and runs no scripts. The f
 
 To install the full edition manually, run `claude plugin marketplace add NatalJR/daguild`, then `/plugin install daguild@daguild` inside Claude Code. Install exactly one edition: both register the same `daguild:*` agents and skills, so uninstall this one first.
 
+After installing, select the output style: `/output-style daguild:daguild` per project, or set `"outputStyle": "daguild:daguild"` in `~/.claude/settings.json` once for every project.
+
 ## How this edition works
 
-- **Output style:** an output style named `daguild`, applied automatically while the plugin is enabled. It carries the reply style, the universal code rules and the operating procedure, and Claude Code sends it with every request. While the plugin is enabled it replaces any output style you selected; disable the plugin to return to yours.
+- **Output style:** an output style selectable as `daguild:daguild` (the short name `daguild` does not select it). It is off until you select it: run `/output-style daguild:daguild` to save it to that project's `.claude/settings.local.json`, or set `"outputStyle": "daguild:daguild"` in `~/.claude/settings.json` for every project (a project's own settings take precedence). It carries the reply style, the universal code rules and the operating procedure, and once selected Claude Code sends it with every request and keeps its own coding instructions. Until then the agents and skills are installed but the procedure is off, and `/daguild` tells you how to turn it on.
 - **The `daguild` skill:** loads the delegation graph and gives the plugin's paths. `/daguild <task>` forces the full walk on a request that looks trivial.
 - **The `git` skill:** conventional commits, one commit per logical change, no AI attribution, and no pushes without an explicit request. The git handling option shapes it.
 - **Charter template:** a project plugs in through `.claude/daguild.md`, copied from the template the `daguild` skill points to.
@@ -34,6 +36,7 @@ Agents run on pinned models and efforts:
 
 ## Differences from the full edition
 
+- The procedure is off until you select the `daguild:daguild` output style. The full edition turns it on at session start.
 - No per-prompt reminder. The output style is sent with every request instead.
 - No `daguild.conf` switches. The procedure ships with every switch at its default.
 - No git guard blocking AI attribution, skipped commit checks or forced pushes.
