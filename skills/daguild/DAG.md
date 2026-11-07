@@ -1,6 +1,6 @@
 # DaGuild delegation DAG
 
-Decision graph: when the main thread delegates to `daguild:` subagents vs works inline. The walk order is the `## Operating procedure (default mode)` carried into every session by the daguild output style; `/daguild <task>` (`SKILL.md` beside this file) only forces that walk on a trivial-looking request. Charter: `<project>/.claude/daguild.md`. Project nouns (commands, areas, tracker, QA limits, forbidden operations, doc map, git conventions) live in its sections; this file names the section, never the noun.
+Decision graph: when the main thread delegates to `daguild:` subagents vs works inline. The walk order is the `## Operating procedure (default mode)` carried into every session by the daguild output style once selected (`/output-style daguild:daguild`); `/daguild <task>` (`SKILL.md` beside this file) only forces that walk on a trivial-looking request. Charter: `<project>/.claude/daguild.md`. Project nouns (commands, areas, tracker, QA limits, forbidden operations, doc map, git conventions) live in its sections; this file names the section, never the noun.
 
 ```mermaid
 flowchart TD
